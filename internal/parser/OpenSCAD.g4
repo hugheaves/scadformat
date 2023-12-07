@@ -1,8 +1,8 @@
 /*
  * NOTE: This ANTLR grammer was adapted from the original OpenSCAD grammer downloaded from
- * https://github.com/openscad/openscad/blob/master/src/parser.y 
- * 
- * The copyright on the OpenSCAD parser.y is reproduced here:
+ * https://github.com/openscad/openscad/blob/944b83cbce81a63a53ce3c615c006e5eeab27f04/src/parser.y
+ *
+ * The copyright on the OpenSCAD parser.y file is reproduced here:
  *
  */
 
@@ -32,8 +32,7 @@
  *
 */
 
-grammar SCAD;
-
+grammar OpenSCAD;
 
 start
 :
@@ -61,15 +60,11 @@ use
 
 statement
 :
-    emptyStatement // is semicolon
-
+    nullStatement // is semicolon
     | assignment // ends in semicolon
-
     | statements
     | moduleDefinition // ends in optional semicolon
-
     | functionDefinition // ends in semicolon
-
     | moduleInstantiation
     | ifElseStatement
 ;
@@ -79,7 +74,7 @@ statements
     L_CURLY statement* R_CURLY
 ;
 
-emptyStatement
+nullStatement
 :
     SEMICOLON
 ;
@@ -138,7 +133,7 @@ elseStatement
 
 childStatement
 :
-    emptyStatement
+    nullStatement
     | moduleInstantiation
     | ifElseStatement
     | childStatements
@@ -245,14 +240,19 @@ parenthetical
 
 vector
 :
-    L_BRACKET
+    L_BRACKET vectorArguments R_BRACKET
+;
+
+vectorArguments
+:
     (
         expr
         | listComprehension
     )
     (
         commas childListComprehensionOrExpr
-    )* optionalCommas R_BRACKET
+    )*
+    optionalCommas
 ;
 
 functionCall
@@ -572,30 +572,48 @@ FILE
     '<' ~[\t\r\n>]* '>'
 ;
 
+// Note: All comments are sent to channel #2
+SINGLE_LINE_COMMENT
+:
+    EOL? SPACES* '//' ~[\r\n]* -> channel ( 2 )
+;
+
+// Multiple newlines are preserved as "comments"
 MULTI_NEWLINE
 :
-    EOL EOL+ -> channel ( 2 )
+    SPACES_EOL_SPACES EOL_SPACES+ -> channel ( 2 )
 ;
 
-LINE_COMMENT
+MULTILINE_COMMENT
 :
-    EOL* '//' .*? EOL+ -> channel ( 2 )
-;
-
-COMMENT
-:
-    '/*' .*? '*/' EOL* -> channel ( 2 )
+     '/*' .*? '*/' -> channel ( 2 )
 ;
 
 WHITESPACE
 :
-    [ \t\r\n]+ -> skip
+    [ \t\r\n] -> skip
 ;
 
-EOL
+fragment SPACES_EOL_SPACES
 :
-    '\r' '\n'   
-    |   '\n'       
+    [ \t]* EOL [ \t]*
+;
+
+fragment EOL_SPACES
+:
+    EOL [ \t]*
+;
+
+fragment SPACES
+:
+    [ \t]
+;
+
+
+fragment EOL
+:
+    '\r' '\n'
+    | '\n'
 ;
 
 fragment
@@ -666,6 +684,6 @@ HEX_DIGIT
 :
     [0-9a-fA-F]
 ;
-    
+
 
 

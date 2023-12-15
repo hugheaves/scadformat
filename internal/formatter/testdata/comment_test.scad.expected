@@ -17,7 +17,7 @@ module foo(argument1) {
 
     echo(i);
 
-    if(i % 2 == 0) {
+    if (i % 2 == 0) {
       echo("i is even");
       echo("which is good");
     }

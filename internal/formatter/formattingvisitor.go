@@ -321,8 +321,11 @@ func (v *FormattingVisitor) VisitIfStatement(ctx *parser.IfStatementContext) int
 }
 
 func (v *FormattingVisitor) VisitElseStatement(ctx *parser.ElseStatementContext) interface{} {
-	v.VisitChildren(ctx)
-	v.formatter.printSpace()
+	v.Visit(ctx.ELSE())
+	nextToken := v.tokenStream.Get(ctx.ELSE().GetSymbol().GetTokenIndex() + 1)
+	if nextToken.GetTokenType() == parser.OpenSCADLexerIF {
+		v.formatter.printSpace()
+	}
 	return nil
 }
 

@@ -6,18 +6,20 @@ SCADFormat is, shall we say, "opinionated" in the way that it formats OpenSCAD c
 
 ## Usage
 
-There is currently no binary available, so you'll need to build the program before you can use it. See the "Building" section below for details.
+SCADFormat is a command line tool.
 
-SCADFormat can be run directly on a file, or by reading / writing from stdin and stdout.
+### Specifying a filename
 
-### Running directly on a file
+SCADFormat can be run directly on a file by specifying the filename on the command line:
 
     $ scadformat my-source.scad
     INFO	formatting file my-source.scad
 
-Note: When running on a file, SCADFormat will create a backup of the original file with a "_TIMESTAMP.scadbak" suffix.
+In this mode, SCADFormat will overwrite the existing code with the formatted version. Note that SCADFormat creates a backup of the original file (with a .scadbak extension) before overwriting it.
 
-### Using stdin / stdout
+### Read from stdin / write to stdout
+
+SCADFormat can also read from stdin and write to stdout as follows:
 
     $ scadformat <my-source.scad >my-source-formatted.scad
 
@@ -50,7 +52,7 @@ Once ANTLR and Go are installed, the SCADFormat can be built as follows:
     cd scadformat
 
     # Generate ANTLR parser
-    go generate
+    go generate ./...
 
     # Build the executable
     go build -o scadformat cmd/main.go

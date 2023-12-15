@@ -19,11 +19,18 @@
 package main
 
 import (
+	_ "embed"
+	"strings"
+
 	"github.com/hugheaves/scadformat/internal/formatter"
 	"github.com/hugheaves/scadformat/internal/logutil"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 )
+
+//go:generate sh -c "git describe > version.txt"
+//go:embed version.txt
+var gitVersion string
 
 func main() {
 	err := logutil.ConfigureLogging("error")
@@ -32,8 +39,15 @@ func main() {
 	}
 
 	var logLevel string
-	pflag.StringVar(&logLevel, "logLevel", "info", "Logging level (one of debug, info, warn, or error)")
+	pflag.StringVar(&logLevel, "log-level", "info", "Logging level (one of debug, info, warn, or error)")
 	pflag.Parse()
+
+	err = logutil.ConfigureLogging(logLevel)
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+
+	zap.L().Info("SCADFormat " + strings.TrimSpace(gitVersion))
 
 	var fileName string
 	if len(pflag.Args()) == 1 {
@@ -42,13 +56,7 @@ func main() {
 		zap.L().Fatal("only a single filename may be specified on the command line")
 	}
 
-	err = logutil.ConfigureLogging(logLevel)
-	if err != nil {
-		zap.L().Fatal(err.Error())
-	}
-
 	formatter := formatter.NewFormatter(fileName)
-
 	err = formatter.Format()
 	if err != nil {
 		zap.L().Fatal(err.Error())

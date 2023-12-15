@@ -22,4 +22,4 @@ package parser
 // The "patch" command below patches the generated code to workaround the problem.
 
 //go:generate antlr4 -Dlanguage=Go -no-listener -visitor OpenSCAD.g4
-//go:generate patch -i openscad_base_visitor.go.patch
+//go:generate patch --binary -i openscad_base_visitor.go.patch

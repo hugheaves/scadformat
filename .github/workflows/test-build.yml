@@ -1,0 +1,33 @@
+name: Test Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21.x'
+
+    - name: Install ANTLR
+      run: pip install antlr4-tools
+
+    - name: Generate
+      run: go generate ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Build
+      run: go build -o scadformat cmd/main.go

@@ -8,3 +8,4 @@
 /internal/parser/OpenSCAD.tokens
 /internal/parser/OpenSCADLexer.interp
 /internal/parser/OpenSCADLexer.tokens
+/cmd/version.txt

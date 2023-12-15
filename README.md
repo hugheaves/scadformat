@@ -4,6 +4,14 @@ SCADFormat is a source code formatter / beautifier for [OpenSCAD](https://opensc
 
 SCADFormat is, shall we say, "opinionated" in the way that it formats OpenSCAD code. In other words, there are no configuration options that alter the way code is formatted. That's not because I feel strongly that OpenSCAD code should be formatted a certain way - it's just that I haven't had time to implement options.
 
+## Installation
+
+The easiest way to install is to download one of the pre-built binary releases:
+
+https://github.com/hugheaves/scadformat/releases
+
+Download the zip file for your operating system (windows.zip, linux,zip, macos.zip) and extract the contents.
+
 ## Usage
 
 SCADFormat is a command line tool.

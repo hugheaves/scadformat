@@ -152,7 +152,13 @@ func (v *FormattingVisitor) VisitChildStatements(ctx *parser.ChildStatementsCont
 	}
 	v.formatter.unindent()
 	v.Visit(ctx.R_CURLY())
-	v.formatter.endLine()
+	nextToken := v.tokenStream.Get(ctx.R_CURLY().GetSymbol().GetTokenIndex() + 1)
+	if nextToken.GetTokenType() != parser.OpenSCADLexerELSE {
+		v.formatter.endLine()
+	} else {
+		v.formatter.printSpace()
+	}
+
 	return nil
 }
 
@@ -299,6 +305,25 @@ func (v *FormattingVisitor) VisitForStatement(ctx *parser.ForStatementContext) i
 func (v *FormattingVisitor) VisitLetStatement(ctx *parser.LetStatementContext) interface{} {
 	v.formatter.printSpace()
 	return v.VisitChildren(ctx)
+}
+
+func (v *FormattingVisitor) VisitIfElseStatement(ctx *parser.IfElseStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *FormattingVisitor) VisitIfStatement(ctx *parser.IfStatementContext) interface{} {
+	v.Visit(ctx.IF())
+	v.formatter.printSpace()
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Expr())
+	v.Visit(ctx.R_PAREN())
+	return nil
+}
+
+func (v *FormattingVisitor) VisitElseStatement(ctx *parser.ElseStatementContext) interface{} {
+	v.VisitChildren(ctx)
+	v.formatter.printSpace()
+	return nil
 }
 
 // processCommentTokens processes any comment tokens in the token stream starting at

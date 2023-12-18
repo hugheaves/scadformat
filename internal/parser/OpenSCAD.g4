@@ -240,7 +240,7 @@ parenthetical
 
 vector
 :
-    L_BRACKET vectorArguments R_BRACKET
+    L_BRACKET vectorArguments? R_BRACKET
 ;
 
 vectorArguments

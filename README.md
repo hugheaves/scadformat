@@ -39,30 +39,57 @@ SCADFormat is written in Go, and uses the ANTLR v4 parser generator. You'll need
 
 See https://go.dev/doc/install to install Go (v1.21 or later) and https://github.com/antlr/antlr4/blob/master/doc/getting-started.md to install ANTLR.
 
+```bash
+python3 -m venv venv
+. ./venv/bin/activate
+pip install antlr4-tools
+```
+
 After installation, run the "antlr4" command to verify the command is available in your search path:
 
-    $ antlr4
-    ANTLR Parser Generator  Version 4.13.1
-    -o ___              specify output directory where all output is generated
-    -lib ___            specify location of grammars, tokens files
-    -atn                generate rule augmented transition network diagrams
-    ...
+```bash
+antlr4
+```
+should display
+```
+ANTLR Parser Generator  Version 4.13.1
+-o ___              specify output directory where all output is generated
+-lib ___            specify location of grammars, tokens files
+-atn                generate rule augmented transition network diagrams
+...
+```
 
 
 ### Checkout And Build
 
 Once ANTLR and Go are installed, the SCADFormat can be built as follows:
 
-    # Checkout source code
-    git clone https:;//github.com/hugheaves/scadformat
+Checkout source code
+```bash
+git clone https:;//github.com/hugheaves/scadformat
+```
 
-    # Go into the respository
-    cd scadformat
+Go into the respository
+```bash
+cd scadformat
+```
 
-    # Generate ANTLR parser
-    go generate ./...
+Generate ANTLR parser
+```bash
+go generate ./...
+```
 
-    # Build the executable
-    go build -o scadformat cmd/main.go
+Build the executable
+```bash
+go build -o scadformat cmd/main.go
+```
 
+run tests
+```bash
+go test -v ./...
+```
 
+run on a file
+```bash
+./scadformat ./internal/formatter/testdata/solo_adapter.scad
+```

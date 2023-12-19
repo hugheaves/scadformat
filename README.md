@@ -20,16 +20,33 @@ SCADFormat is a command line tool.
 
 SCADFormat can be run directly on a file by specifying the filename on the command line:
 
-    $ scadformat my-source.scad
-    INFO	formatting file my-source.scad
-
+```bash
+scadformat my-source.scad
+```
+```
+INFO	formatting file my-source.scad
+```
 In this mode, SCADFormat will overwrite the existing code with the formatted version. Note that SCADFormat creates a backup of the original file (with a .scadbak extension) before overwriting it.
 
 ### Read from stdin / write to stdout
 
 SCADFormat can also read from stdin and write to stdout as follows:
 
-    $ scadformat <my-source.scad >my-source-formatted.scad
+```bash
+scadformat <my-source.scad >my-source-formatted.scad
+```
+
+### Format all .scad recursively
+
+Format all .scad files in the directory "." recursively
+```bash
+find . -type f -name "*.scad" -exec scadformat "{}" \;
+```
+
+If you are ok with the result, you can delete all backup files (.scadbak)
+```bash
+find $directory -type f -name "*.scadbak" -exec rm "{}" \;
+```
 
 ## Building
 
@@ -58,7 +75,6 @@ ANTLR Parser Generator  Version 4.13.1
 -atn                generate rule augmented transition network diagrams
 ...
 ```
-
 
 ### Checkout And Build
 

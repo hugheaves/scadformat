@@ -199,6 +199,7 @@ binaryOperator
     | '%'
     | PLUS
     | MINUS
+    | POW
     | '<'
     | LE
     | EQ
@@ -560,6 +561,11 @@ PLUS
 MINUS
 :
     '-'
+;
+
+POW
+:
+    '^'
 ;
 
 STRING

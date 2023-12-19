@@ -543,10 +543,10 @@ NUMBER
     )
 ;
 
-FLOAT
-:
-    DIGIT* '.' DIGIT+
-;
+FLOAT:
+	DIGIT+ FLOAT_EXPONENT?
+	| DIGIT* '.' DIGIT+ FLOAT_EXPONENT?
+	| DIGIT+ '.' DIGIT* FLOAT_EXPONENT?;
 
 INTEGER
 :
@@ -622,8 +622,13 @@ fragment EOL
     | '\n'
 ;
 
-fragment
-STRING_CHAR
+
+fragment FLOAT_EXPONENT
+:
+  [eE] [+-]? DIGIT+
+;
+
+fragment STRING_CHAR
 :
     ~["\\]
     | ESCAPE_SEQUENCE
@@ -690,6 +695,3 @@ HEX_DIGIT
 :
     [0-9a-fA-F]
 ;
-
-
-

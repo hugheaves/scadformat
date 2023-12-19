@@ -545,7 +545,7 @@ NUMBER
 
 FLOAT
 :
-    DIGIT+ '.' DIGIT+
+    DIGIT* '.' DIGIT+
 ;
 
 INTEGER

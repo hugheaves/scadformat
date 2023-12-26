@@ -343,7 +343,7 @@ listComprehensionElements
 :
     LET L_PAREN arguments R_PAREN listComprehensionElementsP #letStatement
     | EACH vectorElement #eachStatement
-    | FOR L_PAREN arguments (SEMICOLON expr SEMICOLON argument)? R_PAREN vectorElement #forStatement
+    | FOR L_PAREN arguments (SEMICOLON expr SEMICOLON arguments)? R_PAREN vectorElement #forStatement
     | IF L_PAREN expr R_PAREN vectorElement (ELSE vectorElement)? #ifStatementComprehension
 ;
 
@@ -731,7 +731,7 @@ fragment STRING_CHAR
 fragment
 ESCAPE_SEQUENCE
 :
-    '\\' ["\\]
+    '\\' ["\\rnt]
     | OCTAL_ESCAPE_SEQUENCE
     | UNICODE_ESCAPE_SEQUENCE
 ;

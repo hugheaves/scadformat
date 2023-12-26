@@ -1,3 +1,4 @@
+/scadformat
 /internal/parser/.antlr
 /internal/parser/openscad_base_visitor.go
 /internal/parser/openscad_lexer.go

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/hexops/gotextdiff"
@@ -38,11 +39,31 @@ func TestFormat(t *testing.T) {
 	}
 
 	for _, testDataPath := range testDataPaths {
-		testFormat(t, testDataPath)
+		t.Run(testDataPath, execFormat)
 	}
 }
 
-func testFormat(t *testing.T, filePath string) {
+func execFormat(t *testing.T) {
+	paths := strings.Split(t.Name(), string(os.PathSeparator))
+	filename := filepath.Join(paths[1:]...)
+	source, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal("error reading test file:", err)
+	}
+
+	formatter := NewFormatter("")
+
+	output, err := formatter.formatBytes(source)
+	if err != nil {
+		t.Fatal("error formatting:", err)
+	}
+
+	expected := readExpected(t, filename)
+
+	validateOutput(t, expected, output)
+}
+
+func testReformat(t *testing.T, filePath string) {
 	_, fileName := filepath.Split(filePath)
 	t.Run("testExpected("+fileName+")", func(t *testing.T) {
 		source, err := os.ReadFile(filePath)
@@ -50,11 +71,7 @@ func testFormat(t *testing.T, filePath string) {
 			t.Fatal("error reading test file:", err)
 		}
 
-		expectedResultPath := filepath.Join(filePath + ".expected")
-		expected, err := os.ReadFile(expectedResultPath)
-		if err != nil {
-			t.Fatal("error reading expected file:", err)
-		}
+		expected := readExpected(t, filePath)
 
 		formatter := NewFormatter("")
 
@@ -63,23 +80,34 @@ func testFormat(t *testing.T, filePath string) {
 			t.Fatal("error formatting:", err)
 		}
 
-		edits := myers.ComputeEdits(span.URIFromPath("expected"), string(expected), string(output))
-
-		if len(edits) > 0 {
-			diff := fmt.Sprint(gotextdiff.ToUnified("output", "expected", string(expected), edits))
-			t.Errorf("Formatted output different than expected:\n" + diff)
-		}
+		validateOutput(t, expected, output)
 
 		output, err = formatter.formatBytes(output)
 		if err != nil {
 			t.Fatal("error reformatting:", err)
 		}
 
-		edits = myers.ComputeEdits(span.URIFromPath("expected"), string(expected), string(output))
-
-		if len(edits) > 0 {
-			diff := fmt.Sprint(gotextdiff.ToUnified("output", "expected", string(expected), edits))
-			t.Errorf("Reformatted output different than expected:\n" + diff)
-		}
+		validateOutput(t, expected, output)
 	})
+}
+
+func readExpected(t *testing.T, filePath string) []byte {
+	expectedResultPath := filepath.Join(filePath + ".expected")
+	expected, err := os.ReadFile(expectedResultPath)
+	if err != nil {
+		t.Fatal("error reading expected file:", err)
+	}
+	return expected
+}
+
+func validateOutput(t *testing.T, expected []byte, output []byte) {
+	edits := myers.ComputeEdits(span.URIFromPath("expected"), string(expected), string(output))
+
+	// fmt.Println("===============")
+	// fmt.Println(string(output))
+	// fmt.Println("===============")
+	if len(edits) > 0 {
+		diff := fmt.Sprint(gotextdiff.ToUnified("expected", "output", string(expected), edits))
+		t.Errorf("Formatted output different than expected:\n" + diff)
+	}
 }

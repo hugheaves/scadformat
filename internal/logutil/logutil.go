@@ -32,6 +32,7 @@ func ConfigureLogging(logLevel string) error {
 	encoderConfig := zap.NewDevelopmentEncoderConfig()
 	encoderConfig.TimeKey = zapcore.OmitKey
 	if !level.Enabled(zap.DebugLevel) {
+		encoderConfig.StacktraceKey = zapcore.OmitKey
 		encoderConfig.CallerKey = zapcore.OmitKey
 	}
 

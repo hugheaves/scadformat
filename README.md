@@ -82,7 +82,7 @@ Once ANTLR and Go are installed, the SCADFormat can be built as follows:
 
 Checkout source code
 ```bash
-git clone https:;//github.com/hugheaves/scadformat
+git clone https://github.com/hugheaves/scadformat
 ```
 
 Go into the respository

@@ -38,7 +38,8 @@ scadformat <my-source.scad >my-source-formatted.scad
 
 ### Format all .scad recursively
 
-Format all .scad files in the directory "." recursively
+Format all .scad files in the directory "." recursively. Note that if the scadformat command is not in your search PATH, you'll need to specify the full path to `scadformat` after the `-exec-` option. (e.g. `-exec $HOME\scasformat\scadformat`) 
+
 ```bash
 find . -type f -name "*.scad" -exec scadformat "{}" \;
 ```
@@ -50,7 +51,7 @@ find $directory -type f -name "*.scadbak" -exec rm "{}" \;
 
 ## Building
 
-### Prerequisites
+### Install Prerequisites
 
 SCADFormat is written in Go, and uses the ANTLR v4 parser generator. You'll need to install both tools to build the sourcecode.
 
@@ -76,19 +77,34 @@ ANTLR Parser Generator  Version 4.13.1
 ...
 ```
 
-### Checkout And Build
-
-Once ANTLR and Go are installed, the SCADFormat can be built as follows:
-
-Checkout source code
+### Checkout Source
+Checkout the source code and "cd" into the "scadformat" directory:
 ```bash
 git clone https://github.com/hugheaves/scadformat
-```
-
-Go into the respository
-```bash
 cd scadformat
 ```
+
+#### Build with Make
+If you have GNU Make (or a compatible make utility installed), you can build the program just by running the "make" command:
+```bash
+make
+```
+
+You should see output similar to the following:
+```
+go generate ./...
+patching file internal/parser/openscad_base_visitor.go
+go test ./...
+?   	github.com/hugheaves/scadformat	[no test files]
+?   	github.com/hugheaves/scadformat/cmd	[no test files]
+?   	github.com/hugheaves/scadformat/internal/logutil	[no test files]
+?   	github.com/hugheaves/scadformat/internal/parser	[no test files]
+ok  	github.com/hugheaves/scadformat/internal/formatter	(cached)
+go build cmd/scadformat.go
+```
+
+#### Build without Make
+If you don't have make installed (i.e. on Windows), you can still build the program by running the necessary commands manually:
 
 Generate ANTLR parser
 ```bash
@@ -97,13 +113,14 @@ go generate ./...
 
 Build the executable
 ```bash
-go build -o scadformat cmd/main.go
+go build -o scadformat cmd/scadformat.go
 ```
 
 run tests
 ```bash
 go test -v ./...
 ```
+
 
 run on a file
 ```bash

@@ -153,11 +153,8 @@ func (tokenFormatter *TokenFormatter) outputIndent() error {
 
 func (tokenFormatter *TokenFormatter) indent() {
 	tokenFormatter.currentIndent += tokenFormatter.settings.indentSize
-	//	zap.L().Debug("Indenting to " + tokenFormatter.indentSize)
-
 }
 
 func (tokenFormatter *TokenFormatter) unindent() {
 	tokenFormatter.currentIndent -= tokenFormatter.settings.indentSize
-	// zap.L().Debug("Unindenting to " + tokenFormatter.indentSize)
 }

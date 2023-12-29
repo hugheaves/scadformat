@@ -62,7 +62,6 @@ func (v *FormattingVisitor) Visit(tree antlr.ParseTree) interface{} {
 		val := tree.Accept(v)
 		zap.S().Debugf("Visited: %s", reflect.TypeOf(tree).String())
 		return val
-
 	}
 	return nil
 }
@@ -85,7 +84,7 @@ func (v *FormattingVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
 }
 
 func (v *FormattingVisitor) VisitErrorNode(_ antlr.ErrorNode) interface{} {
-	return nil
+	panic("visited ErrorNode")
 }
 
 func (v *FormattingVisitor) VisitStart(ctx *parser.StartContext) interface{} {
@@ -144,26 +143,39 @@ func (v *FormattingVisitor) VisitTernaryExpr(ctx *parser.TernaryExprContext) int
 
 }
 
+func (v *FormattingVisitor) formatChildStatement(ctx parser.IChildStatementContext, afterElse bool) interface{} {
+	if ctx.Semicolon() != nil {
+		v.Visit(ctx.Semicolon())
+	} else if ctx.ChildStatements() != nil {
+		v.formatter.printSpace()
+		v.Visit(ctx.ChildStatements())
+	} else if ctx.ModuleInstantiation() != nil {
+		continueLine := afterElse && ctx.ModuleInstantiation().IfElseStatement() != nil
+		if continueLine {
+			v.formatter.printSpace()
+		} else {
+			v.formatter.endLine()
+			v.formatter.indent()
+		}
+		v.Visit(ctx.ModuleInstantiation())
+		if !continueLine {
+			v.formatter.unindent()
+		}
+	} else {
+		panic("unexpected state")
+	}
+	return nil
+}
+
 func (v *FormattingVisitor) VisitChildStatements(ctx *parser.ChildStatementsContext) interface{} {
-	zap.L().Debug("visitChildStatements")
-	v.formatter.printSpace()
 	v.Visit(ctx.L_CURLY())
 	v.formatter.endLine()
 	v.formatter.indent()
-	for _, childCtx := range ctx.GetChildren() {
-		if _, ok := childCtx.(parser.IChildStatementOrAssignmentContext); ok {
-			v.Visit(childCtx.(antlr.RuleContext))
-		}
+	for _, child := range ctx.AllChildStatementOrAssignment() {
+		v.Visit(child)
 	}
 	v.formatter.unindent()
 	v.Visit(ctx.R_CURLY())
-	nextToken := v.tokenStream.Get(ctx.R_CURLY().GetSymbol().GetTokenIndex() + 1)
-	if nextToken.GetTokenType() != parser.OpenSCADLexerELSE {
-		v.formatter.endLine()
-	} else {
-		v.formatter.printSpace()
-	}
-
 	return nil
 }
 
@@ -203,28 +215,13 @@ func (v *FormattingVisitor) VisitModuleDefinition(ctx *parser.ModuleDefinitionCo
 	return nil
 }
 
-func (v *FormattingVisitor) VisitModuleInstantiation(ctx *parser.ModuleInstantiationContext) interface{} {
-	v.formatter.printSpace()
-	v.Visit(ctx.ModifierCharacters())
-	v.Visit(ctx.SingleModuleInstantiation())
-	v.Visit(ctx.IfElseStatement())
-	if ctx.ChildStatement() != nil && (ctx.ChildStatement().Semicolon() == nil && ctx.ChildStatement().ChildStatements() == nil) {
-		v.formatter.indent()
-		v.formatter.printNewLine()
-		v.Visit(ctx.ChildStatement())
-		v.formatter.unindent()
-	} else {
-		v.Visit(ctx.ChildStatement())
-	}
-
-	return nil
-}
-
 func (v *FormattingVisitor) VisitSingleModuleInstantiation(ctx *parser.SingleModuleInstantiationContext) interface{} {
 	v.Visit(ctx.ModuleId())
 	v.Visit(ctx.L_PAREN())
 	v.Visit(ctx.Arguments())
 	v.Visit(ctx.R_PAREN())
+	v.formatChildStatement(ctx.ChildStatement(), false)
+	v.formatter.endLine()
 	return nil
 }
 
@@ -262,9 +259,6 @@ func (v *FormattingVisitor) VisitArrayAccess(ctx *parser.ArrayAccessContext) int
 	return v.VisitChildren(ctx)
 }
 
-// func (v *FormattingVisitor) VisitVectorElements(ctx *parser.VectorElementsContext) interface{} {
-// }
-
 func (v *FormattingVisitor) VisitVector(ctx *parser.VectorContext) interface{} {
 	zap.L().Debug("Visiting vector")
 
@@ -301,7 +295,14 @@ func (v *FormattingVisitor) VisitLetStatement(ctx *parser.LetStatementContext) i
 }
 
 func (v *FormattingVisitor) VisitIfElseStatement(ctx *parser.IfElseStatementContext) interface{} {
-	return v.VisitChildren(ctx)
+	v.Visit(ctx.IfStatement())
+	if ctx.ELSE() != nil {
+		v.formatter.printSpace()
+		v.Visit(ctx.ELSE())
+		v.formatChildStatement(ctx.ChildStatement(), true)
+	}
+	v.formatter.endLine()
+	return nil
 }
 
 func (v *FormattingVisitor) VisitIfStatement(ctx *parser.IfStatementContext) interface{} {
@@ -310,7 +311,7 @@ func (v *FormattingVisitor) VisitIfStatement(ctx *parser.IfStatementContext) int
 	v.Visit(ctx.L_PAREN())
 	v.Visit(ctx.Expr())
 	v.Visit(ctx.R_PAREN())
-	v.Visit(ctx.ChildStatement())
+	v.formatChildStatement(ctx.ChildStatement(), false)
 	return nil
 }
 
@@ -319,15 +320,6 @@ func (v *FormattingVisitor) VisitComma(ctx *parser.CommaContext) interface{} {
 	v.formatter.printSpace()
 	return nil
 }
-
-// func (v *FormattingVisitor) VisitElseStatement(ctx *parser.ElseStatementContext) interface{} {
-// 	v.Visit(ctx.ELSE())
-// 	nextToken := v.tokenStream.Get(ctx.ELSE().GetSymbol().GetTokenIndex() + 1)
-// 	if nextToken.GetTokenType() == parser.OpenSCADLexerIF {
-// 		v.formatter.printSpace()
-// 	}
-// 	return nil
-// }
 
 // processCommentTokens processes any comment tokens in the token stream starting at
 // index "startIndex".
@@ -369,19 +361,6 @@ loop:
 		}
 	}
 }
-
-// func (v *FormattingVisitor) printDeferredComment() {
-// 	if v.deferredCommentIndex != -1 {
-// 		token := v.tokenStream.Get(v.deferredCommentIndex)
-// 		tokenType := token.GetTokenType()
-// 		// this should never happen
-// 		if tokenType != parser.OpenSCADLexerSINGLE_LINE_COMMENT {
-// 			panic("comment was not a single line comment")
-// 		}
-// 		v.printComment(token)
-// 		v.deferredCommentIndex = -1
-// 	}
-// }
 
 func (v *FormattingVisitor) printMultiNewlineComment(text string) {
 	newLineCount := strings.Count(text, "\n")

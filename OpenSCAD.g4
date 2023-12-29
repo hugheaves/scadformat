@@ -30,31 +30,19 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
-*/
+ */
 
 grammar OpenSCAD;
 
-start
-:
-    input
-;
+start: input;
 
-input
-:
-    (
-        includeOrUseFile
-        | statement
-    )*
-;
+input: ( includeOrUseFile | statement)*;
 
-includeOrUseFile
-:
-    INCLUDE_OR_USE_FILE
-;
-
+includeOrUseFile: INCLUDE_OR_USE_FILE;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 statement
         : 
         ';'
@@ -65,55 +53,46 @@ statement
         | TOK_FUNCTION TOK_ID '(' parameters ')' '=' expr ';'
         | TOK_EOT
         ;
- */
-statement
-:
-    semicolon // is semicolon
-    | innerInput
-    | moduleInstantiation
-    | assignment // ends in semicolon
-    | moduleDefinition // no semicolon
-    | functionDefinition // ends in semicolon
-;
+------------------
+*/
+statement:
+	semicolon // is semicolon
+	| innerInput
+	| moduleInstantiation
+	| assignment // ends in semicolon
+	| moduleDefinition // no semicolon
+	| functionDefinition; // ends in semicolon
 
-moduleDefinition
-:
-    MODULE ID L_PAREN parameters R_PAREN statement
-;
+moduleDefinition:
+	MODULE ID L_PAREN parameters R_PAREN statement;
 
-functionDefinition
-:
-    FUNCTION ID L_PAREN parameters R_PAREN EQUALS expr SEMICOLON
-;
-
+functionDefinition:
+	FUNCTION ID L_PAREN parameters R_PAREN EQUALS expr SEMICOLON;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 inner_input
         : /x empty x/
         | inner_input statement
         ;
+------------------
 */
-
-innerInput
-:
-    L_CURLY statement* R_CURLY
-;
+innerInput: L_CURLY statement* R_CURLY;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 assignment
         : TOK_ID '=' expr ';'
         ;
+------------------
 */
-
-assignment
-:
-    ID EQUALS expr SEMICOLON
-;
+assignment: ID EQUALS expr SEMICOLON;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 module_instantiation
         : '!' module_instantiation
         | '#' module_instantiation
@@ -122,75 +101,67 @@ module_instantiation
         | single_module_instantiation child_statement
         | ifelse_statement
         ;
+------------------
 */
-moduleInstantiation
-:
-    modifierCharacters singleModuleInstantiation childStatement
-    | modifierCharacters ifElseStatement
-;
+moduleInstantiation:
+	modifierCharacters (
+		singleModuleInstantiation // Note: childStatement moved to singleModuleInstantiation
+		| ifElseStatement
+	);
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 ifelse_statement
         : if_statement %prec NO_ELSE
         | if_statement TOK_ELSE child_statement
         ;
+------------------
 */
-ifElseStatement
-:
-    ifStatement
-    | ifStatement ELSE childStatement
-;
+ifElseStatement: ifStatement | ifStatement ELSE childStatement;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 if_statement
         : TOK_IF '(' expr ')' child_statement
         ;
+------------------
 */
-ifStatement
-:
-    IF L_PAREN expr R_PAREN childStatement
-;
-
+ifStatement: IF L_PAREN expr R_PAREN childStatement;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 child_statement
         : ';'
         | '{' child_statements '}'
         | module_instantiation
         ;
+------------------
 */
-childStatement
-:
-    semicolon
-    | childStatements
-    | moduleInstantiation
-;
-
+childStatement:
+	semicolon
+	| childStatements
+	| moduleInstantiation;
 
 /*
+Equivalent from parser.y:
+------------------
 child_statements
         : /x empty x/
         | child_statements child_statement
         | child_statements assignment
         ;
+------------------
 */
-childStatements
-:
-    L_CURLY childStatementOrAssignment* R_CURLY
-;
+childStatements: L_CURLY childStatementOrAssignment* R_CURLY;
 
-childStatementOrAssignment
-:
-    childStatement
-    | assignment
-;
-
+childStatementOrAssignment: (childStatement | assignment);
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 // "for", "let" and "each" are valid module identifiers
 module_id
         : TOK_ID 
@@ -200,29 +171,24 @@ module_id
         | TOK_ECHO
         | TOK_EACH
         ;
+------------------
 */
-moduleId
-:
-    ID
-    | FOR
-    | LET
-    | ASSERT
-    | ECHO
-    | EACH
-;
+moduleId: ID | FOR | LET | ASSERT | ECHO | EACH;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 single_module_instantiation
         : module_id '(' arguments ')'
         ;
- */
-singleModuleInstantiation
-:
-   moduleId L_PAREN arguments R_PAREN
-;
+ ------------------
+*/
+singleModuleInstantiation:
+	moduleId L_PAREN arguments R_PAREN childStatement;
 
 /*
+Equivalent from parser.y:
+------------------
 expr
         : logic_or
         | TOK_FUNCTION '(' parameters ')' expr %prec NO_ELSE
@@ -231,40 +197,37 @@ expr
         | TOK_ASSERT '(' arguments ')' expr_or_empty
         | TOK_ECHO '(' arguments ')' expr_or_empty
         ;
+------------------
 */
-
-expr
-:
-    call #callExpr
-    | expr binaryOperator expr #binaryExpr
-    | ('!' | MINUS | PLUS) expr #unary
-    | FUNCTION '(' parameters ')' expr # functionDef
-    | expr QUESTION_MARK expr COLON expr #ternaryExpr
-    | LET L_PAREN arguments R_PAREN expr #letExpr
-    | ASSERT L_PAREN arguments R_PAREN expr? #assertion 
-    | ECHO L_PAREN arguments R_PAREN expr? #echo
-;
-
+expr:
+	call										# callExpr
+	| expr binaryOperator expr					# binaryExpr
+	| ('!' | MINUS | PLUS) expr					# unary
+	| FUNCTION '(' parameters ')' expr			# functionDef
+	| expr QUESTION_MARK expr COLON expr		# ternaryExpr
+	| LET L_PAREN arguments R_PAREN expr		# letExpr
+	| ASSERT L_PAREN arguments R_PAREN expr?	# assertion
+	| ECHO L_PAREN arguments R_PAREN expr?		# echo;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 call
         : primary
         | call '(' arguments ')'
         | call '[' expr ']'
         | call '.' TOK_ID
+------------------
 */
-
-call
-:
-    primary #primaryElem
-    | call L_PAREN arguments R_PAREN #functionCall
-    | call L_BRACKET expr R_BRACKET #arrayAccess
-    | call '.' ID #memberAccess
-;
+call:
+	primary								# primaryElem
+	| call L_PAREN arguments R_PAREN	# functionCall
+	| call L_BRACKET expr R_BRACKET		# arrayAccess
+	| call '.' ID						# memberAccess;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 primary
         : TOK_TRUE
         | TOK_FALSE
@@ -278,58 +241,45 @@ primary
         | '[' ']'
         | '[' vector_elements optional_trailing_comma ']'
 		;
+------------------
 */
+primary:
+	(TRUE | FALSE | UNDEF | NUMBER | STRING | ID)				# literalOrId
+	| L_PAREN expr R_PAREN										# parenthetical
+	| L_BRACKET expr COLON expr (COLON expr)? R_BRACKET			# range
+	| L_BRACKET R_BRACKET										# emptyVector
+	| L_BRACKET vectorElements optionalTrailingComma R_BRACKET	# vector;
 
-primary
-:
-    literal #zLiteral
-    | ID #zID
-    | L_PAREN expr R_PAREN #parenthetical
-    | L_BRACKET expr COLON expr (COLON expr)? R_BRACKET #range
-    | L_BRACKET R_BRACKET #emptyVector
-    | L_BRACKET vectorElements optionalTrailingComma R_BRACKET #vector
-;
-
-literal:
-    TRUE 
-    | FALSE
-    | UNDEF
-    | NUMBER
-    | STRING 
-;
-
-binaryOperator
-:
-    '*'
-    | '/'
-    | '%'
-    | PLUS
-    | MINUS
-    | POW
-    | '<'
-    | LE
-    | EQ
-    | NE
-    | GE
-    | '>'
-    | AND
-    | OR
-;
+binaryOperator:
+	'*'
+	| '/'
+	| '%'
+	| PLUS
+	| MINUS
+	| POW
+	| '<'
+	| LE
+	| EQ
+	| NE
+	| GE
+	| '>'
+	| AND
+	| OR;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 vector_elements
         : vector_element
         | vector_elements ',' vector_element
         ;
+------------------
 */
-vectorElements
-:
-    vectorElement (comma vectorElement)*
-;
+vectorElements: vectorElement (comma vectorElement)*;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 list_comprehension_elements
         : TOK_LET '(' arguments ')' list_comprehension_elements_p
         | TOK_EACH vector_element
@@ -338,46 +288,42 @@ list_comprehension_elements
         | TOK_IF '(' expr ')' vector_element %prec NO_ELSE
         | TOK_IF '(' expr ')' vector_element TOK_ELSE vector_element
         ;
+------------------
 */
-listComprehensionElements
-:
-    LET L_PAREN arguments R_PAREN listComprehensionElementsP #letStatement
-    | EACH vectorElement #eachStatement
-    | FOR L_PAREN arguments (SEMICOLON expr SEMICOLON arguments)? R_PAREN vectorElement #forStatement
-    | IF L_PAREN expr R_PAREN vectorElement (ELSE vectorElement)? #ifStatementComprehension
-;
+listComprehensionElements:
+	LET L_PAREN arguments R_PAREN listComprehensionElementsP							# letStatement
+	| EACH vectorElement																# eachStatement
+	| FOR L_PAREN arguments (SEMICOLON expr SEMICOLON arguments)? R_PAREN vectorElement	# forStatement
+	| IF L_PAREN expr R_PAREN vectorElement (ELSE vectorElement)?                       # ifStatementComprehension;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 // list_comprehension_elements with optional parenthesis
 list_comprehension_elements_p
         : list_comprehension_elements
         | '(' list_comprehension_elements ')'
         ;
+------------------
 */
-listComprehensionElementsP
-:
-    listComprehensionElements
-    | L_PAREN listComprehensionElements R_PAREN
-;
-
+listComprehensionElementsP:
+	listComprehensionElements
+	| L_PAREN listComprehensionElements R_PAREN;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 vector_element
         : list_comprehension_elements_p
         | expr
         ;
+------------------
 */
-vectorElement
-:
-    listComprehensionElementsP
-    | expr
-;
-
+vectorElement: listComprehensionElementsP | expr;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 parameters
         : /x empty x/
         | parameter_list optional_trailing_comma
@@ -390,22 +336,17 @@ parameter
         : TOK_ID
         | TOK_ID '=' expr
         ;
+------------------
 */
+parameters:
+	// empty
+	| parameter (comma parameter)* optionalTrailingComma;
 
-parameters
-:
-/* empty */
-   | parameter ( comma parameter )* optionalTrailingComma
-;
-
-parameter
-:
-    ID
-    | assignmentExpression
-;
+parameter: ID | assignmentExpression;
 
 /*
-parser.y:
+Equivalent from parser.y:
+------------------
 arguments
         : /x empty x/
         | argument_list optional_trailing_comma
@@ -420,372 +361,150 @@ argument
         : expr
         | TOK_ID '=' expr
         ;
+------------------
 */
+arguments:
+	// empty
+	| argument ( comma argument)* optionalTrailingComma;
 
-arguments
-:
-/* empty */
-   | argument ( comma argument )* optionalTrailingComma
-;
+argument: expr | assignmentExpression;
 
-argument
-:
-    expr
-    | assignmentExpression
-;
+modifierCharacters: ('!' | '#' | '%' | '*')*;
 
-modifierCharacters
-:
-    ('!' | '#' | '%' | '*')*
-;
+optionalTrailingComma: comma?;
 
-optionalTrailingComma
-:
-    comma?
-;
+comma: COMMA;
 
-comma
-:
-    COMMA
-;
+semicolon: SEMICOLON;
 
-semicolon
-:
-    SEMICOLON
-;
+assignmentExpression: ID EQUALS expr;
 
-assignmentExpression
-:
-    ID EQUALS expr
-;
+EQUALS: '=';
 
-EQUALS
-:
-    '='
-;
+SEMICOLON: ';';
 
-SEMICOLON
-:
-    ';'
-;
+COLON: ':';
 
-COLON
-:
-    ':'
-;
+COMMA: ',';
 
-COMMA
-:
-    ','
-;
+L_CURLY: '{';
 
-L_CURLY
-:
-    '{'
-;
+R_CURLY: '}';
 
-R_CURLY
-:
-    '}'
-;
+L_PAREN: '(';
 
-L_PAREN
-:
-    '('
-;
+R_PAREN: ')';
 
-R_PAREN
-:
-    ')'
-;
+L_BRACKET: '[';
 
-L_BRACKET
-:
-    '['
-;
+R_BRACKET: ']';
 
-R_BRACKET
-:
-    ']'
-;
+QUESTION_MARK: '?';
 
-QUESTION_MARK
-:
-    '?'
-;
+GE: '>=';
 
-GE
-:
-    '>='
-;
+EQ: '==';
 
-EQ
-:
-    '=='
-;
+NE: '!=';
 
-NE
-:
-    '!='
-;
+LE: '<=';
 
-LE
-:
-    '<='
-;
+AND: '&&';
 
-AND
-:
-    '&&'
-;
+OR: '||';
 
-OR
-:
-    '||'
-;
+LET: 'let';
 
-LET
-:
-    'let'
-;
+FOR: 'for';
 
-FOR
-:
-    'for'
-;
+IF: 'if';
 
-IF
-:
-    'if'
-;
+TRUE: 'true';
 
-TRUE
-:
-    'true'
-;
+FALSE: 'false';
 
-FALSE
-:
-    'false'
-;
+UNDEF: 'undef';
 
-UNDEF
-:
-    'undef'
-;
+ELSE: 'else';
 
-ELSE
-:
-    'else'
-;
+ASSERT: 'assert';
 
-ASSERT
-:
-    'assert'
-;
+ECHO: 'echo';
 
-ECHO
-:
-    'echo'
-;
+EACH: 'each';
 
-EACH
-:
-    'each'
-;
+FUNCTION: 'function';
 
-FUNCTION
-:
-    'function'
-;
+MODULE: 'module';
 
-MODULE
-:
-    'module'
-;
+ID: '$'? ( LETTER | DIGIT | UNDERSCORE)+;
 
-ID
-:
-    '$'?
-    (
-        LETTER
-        | DIGIT
-        | UNDERSCORE
-    )+
-;
-
-NUMBER
-:
-    (
-        FLOAT
-        | INTEGER
-    )
-;
+NUMBER: ( FLOAT | INTEGER);
 
 FLOAT:
 	DIGIT+ FLOAT_EXPONENT?
 	| DIGIT* '.' DIGIT+ FLOAT_EXPONENT?
 	| DIGIT+ '.' DIGIT* FLOAT_EXPONENT?;
 
-INTEGER
-:
-    DIGIT+
-;
+INTEGER: DIGIT+;
 
-PLUS
-:
-    '+'
-;
+PLUS: '+';
 
-MINUS
-:
-    '-'
-;
+MINUS: '-';
 
-POW
-:
-    '^'
-;
+POW: '^';
 
-STRING
-:
-    '"' STRING_CHAR* '"'
-;
+STRING: '"' STRING_CHAR* '"';
 
 // Note: All comments are sent to channel #2
-SINGLE_LINE_COMMENT
-:
-    EOL? SPACES '//' ~[\r\n]* -> channel ( 2 )
-;
+SINGLE_LINE_COMMENT: EOL? SPACES '//' ~[\r\n]* -> channel ( 2 );
 
-// Multiple newlines are preserved as "comments"
-MULTI_NEWLINE
-:
-    SPACES_EOL_SPACES EOL_SPACES+ -> channel ( 2 )
-;
+// Multiple newlines are handled as "comments"
+MULTI_NEWLINE: SPACES_EOL_SPACES EOL_SPACES+ -> channel ( 2 );
 
-MULTILINE_COMMENT
-:
-     '/*' .*? '*/' -> channel ( 2 )
-;
+MULTILINE_COMMENT: '/*' .*? '*/' -> channel ( 2 );
 
-WHITESPACE
-:
-    [ \t\r\n] -> skip
-;
+WHITESPACE: [ \t\r\n] -> skip;
 
-INCLUDE_OR_USE_FILE
-:
-    (INCLUDE|USE) SPACES FILE
-;
+INCLUDE_OR_USE_FILE: (INCLUDE | USE) SPACES FILE;
 
-fragment INCLUDE
-:
-    'include'
-;
+fragment INCLUDE: 'include';
 
-fragment USE
-:
-    'use'
-;
+fragment USE: 'use';
 
-fragment FILE
-:
-    '<' ~[\t\r\n>]* '>'
-;
+fragment FILE: '<' ~[\t\r\n>]* '>';
 
-fragment SPACES_EOL_SPACES
-:
-    [ \t]* EOL [ \t]*
-;
+fragment SPACES_EOL_SPACES: [ \t]* EOL [ \t]*;
 
-fragment EOL_SPACES
-:
-    EOL [ \t]*
-;
+fragment EOL_SPACES: EOL [ \t]*;
 
-fragment SPACES
-:
-    [ \t]*
-;
+fragment SPACES: [ \t]*;
 
+fragment EOL: '\r' '\n' | '\n';
 
-fragment EOL
-:
-    '\r' '\n'
-    | '\n'
-;
+fragment FLOAT_EXPONENT: [eE] [+-]? DIGIT+;
 
+fragment STRING_CHAR: ~["\\] | ESCAPE_SEQUENCE;
 
-fragment FLOAT_EXPONENT
-:
-  [eE] [+-]? DIGIT+
-;
+fragment ESCAPE_SEQUENCE:
+	'\\' ["\\rnt]
+	| OCTAL_ESCAPE_SEQUENCE
+	| UNICODE_ESCAPE_SEQUENCE;
 
-fragment STRING_CHAR
-:
-    ~["\\]
-    | ESCAPE_SEQUENCE
-;
+fragment OCTAL_ESCAPE_SEQUENCE: '\\' OCTAL_DIGIT+;
 
-fragment
-ESCAPE_SEQUENCE
-:
-    '\\' ["\\rnt]
-    | OCTAL_ESCAPE_SEQUENCE
-    | UNICODE_ESCAPE_SEQUENCE
-;
+fragment UNICODE_ESCAPE_SEQUENCE: '\\' 'u' HEX_DIGIT+;
 
-fragment
-OCTAL_ESCAPE_SEQUENCE
-:
-    '\\' OCTAL_DIGIT+
-;
+fragment FILE_CHAR: [a-zA-Z./];
 
-fragment
-UNICODE_ESCAPE_SEQUENCE
-:
-    '\\' 'u' HEX_DIGIT+
-;
+fragment LETTER: [a-zA-Z];
 
-fragment
-FILE_CHAR
-:
-    [a-zA-Z./]
-;
+fragment UPPERCASE_LETTER: [A-Z];
 
-fragment
-LETTER
-:
-    [a-zA-Z]
-;
+fragment UNDERSCORE: '_';
 
-fragment
-UPPERCASE_LETTER
-:
-    [A-Z]
-;
+fragment DIGIT: [0-9];
 
-fragment
-UNDERSCORE
-:
-    '_'
-;
+fragment OCTAL_DIGIT: [0-7];
 
-fragment
-DIGIT
-:
-    [0-9]
-;
-
-fragment
-OCTAL_DIGIT
-:
-    [0-7]
-;
-
-fragment
-HEX_DIGIT
-:
-    [0-9a-fA-F]
-;
+fragment HEX_DIGIT: [0-9a-fA-F];

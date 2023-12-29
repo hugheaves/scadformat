@@ -1,16 +1,16 @@
-*** openscad_base_visitor.go	2023-12-05 12:59:08.274327803 -0500
---- openscad_base_visitor.go.patched	2023-12-05 13:03:55.822033108 -0500
+*** internal/parser/openscad_base_visitor.go	2023-12-24 18:50:20.383308406 -0500
+--- internal/parser/openscad_base_visitor.go.patched	2023-12-24 18:49:00.482824974 -0500
 ***************
-*** 6,12 ****
-  
+*** 5,11 ****
+  import "github.com/antlr4-go/antlr/v4"
   
   type BaseOpenSCADVisitor struct {
 ! 	*antlr.BaseParseTreeVisitor
   }
   
   func (v *BaseOpenSCADVisitor) VisitStart(ctx *StartContext) interface{} {
---- 6,12 ----
-  
+--- 5,11 ----
+  import "github.com/antlr4-go/antlr/v4"
   
   type BaseOpenSCADVisitor struct {
 ! 	VisitChildren func (node antlr.RuleNode) interface{}

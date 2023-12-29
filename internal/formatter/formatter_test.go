@@ -27,59 +27,83 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
-	"github.com/hugheaves/scadformat/internal/logutil"
+)
+
+const (
+	validInputDir   = "testdata/valid"
+	invalidInputDir = "testdata/invalid"
+	expectedDir     = "testdata/expected"
 )
 
 func TestFormat(t *testing.T) {
-	logutil.ConfigureLogging("info")
-	testDataPaths, err := filepath.Glob(filepath.Join("testdata", "*.scad"))
+	inputFiles, err := filepath.Glob(filepath.Join(validInputDir, "*.scad"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, testDataPath := range testDataPaths {
-		testFormat(t, testDataPath)
+	for _, inputFile := range inputFiles {
+		t.Run(filepath.Base(inputFile), func(t *testing.T) {
+			testData := readTestData(t, validInputDir)
+
+			formatter := NewFormatter("")
+
+			output, err := formatter.formatBytes(testData)
+			if err != nil {
+				t.Fatal("error formatting:", err)
+			}
+
+			expected := readTestData(t, expectedDir)
+
+			validateOutput(t, expected, output)
+		})
 	}
 }
 
-func testFormat(t *testing.T, filePath string) {
-	_, fileName := filepath.Split(filePath)
-	t.Run("testExpected("+fileName+")", func(t *testing.T) {
-		source, err := os.ReadFile(filePath)
-		if err != nil {
-			t.Fatal("error reading test file:", err)
-		}
+// Test that formatting is idempotent
+func TestReformat(t *testing.T) {
+	testData, err := filepath.Glob(filepath.Join(validInputDir, "*.scad"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		expectedResultPath := filepath.Join(filePath + ".expected")
-		expected, err := os.ReadFile(expectedResultPath)
-		if err != nil {
-			t.Fatal("error reading expected file:", err)
-		}
+	for _, inputFile := range testData {
+		t.Run(filepath.Base(inputFile), func(t *testing.T) {
+			validInput := readTestData(t, validInputDir)
 
-		formatter := NewFormatter("")
+			formatter := NewFormatter("")
 
-		output, err := formatter.formatBytes(source)
-		if err != nil {
-			t.Fatal("error formatting:", err)
-		}
+			output, err := formatter.formatBytes(validInput)
+			if err != nil {
+				t.Fatal("error formatting:", err)
+			}
 
-		edits := myers.ComputeEdits(span.URIFromPath("expected"), string(expected), string(output))
+			expected := readTestData(t, expectedDir)
 
-		if len(edits) > 0 {
-			diff := fmt.Sprint(gotextdiff.ToUnified("output", "expected", string(expected), edits))
-			t.Errorf("Formatted output different than expected:\n" + diff)
-		}
+			validateOutput(t, expected, output)
 
-		output, err = formatter.formatBytes(output)
-		if err != nil {
-			t.Fatal("error reformatting:", err)
-		}
+			output, err = formatter.formatBytes(output)
+			if err != nil {
+				t.Fatal("error reformatting:", err)
+			}
 
-		edits = myers.ComputeEdits(span.URIFromPath("expected"), string(expected), string(output))
+			validateOutput(t, expected, output)
+		})
+	}
+}
 
-		if len(edits) > 0 {
-			diff := fmt.Sprint(gotextdiff.ToUnified("output", "expected", string(expected), edits))
-			t.Errorf("Reformatted output different than expected:\n" + diff)
-		}
-	})
+func readTestData(t *testing.T, dir string) []byte {
+	filename := filepath.Join(dir, filepath.Base(t.Name()))
+	validInput, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal("error reading test file:", err)
+	}
+	return validInput
+}
+
+func validateOutput(t *testing.T, expected []byte, output []byte) {
+	edits := myers.ComputeEdits(span.URIFromPath("foo"), string(expected), string(output))
+	if len(edits) > 0 {
+		diff := fmt.Sprint(gotextdiff.ToUnified("expected", "output", string(expected), edits))
+		t.Errorf("Formatted output different than expected:\n" + diff)
+	}
 }

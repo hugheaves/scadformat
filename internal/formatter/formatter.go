@@ -117,8 +117,10 @@ func (f *Formatter) formatBytes(input []byte) ([]byte, error) {
 	v := NewFormattingVisitor(tokens, formatter)
 	e := &ErrorListener{}
 	p.AddErrorListener(e)
-	p.Start_().Accept(v)
-
+	startContext := p.Start_()
+	if e.lastErr == nil {
+		startContext.Accept(v)
+	}
 	return outputBuffer.Bytes(), e.lastErr
 }
 

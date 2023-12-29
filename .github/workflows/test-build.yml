@@ -23,11 +23,5 @@ jobs:
     - name: Install ANTLR
       run: pip install antlr4-tools
 
-    - name: Generate
-      run: go generate ./...
-
-    - name: Test
-      run: go test -v ./...
-
-    - name: Build
-      run: go build -o scadformat cmd/main.go
+    - name: Build and Test
+      run: make

@@ -1,12 +1,5 @@
-/scadformat
-/internal/parser/.antlr
-/internal/parser/openscad_base_visitor.go
-/internal/parser/openscad_lexer.go
-/internal/parser/openscad_parser.go
-/internal/parser/openscad_visitor.go
-/internal/parser/openscad_base_visitor.go.orig
-/internal/parser/OpenSCAD.interp
-/internal/parser/OpenSCAD.tokens
-/internal/parser/OpenSCADLexer.interp
-/internal/parser/OpenSCADLexer.tokens
+/internal/parser/*
 /cmd/version.txt
+/.antlr
+/scadformat
+/scadformat.exe

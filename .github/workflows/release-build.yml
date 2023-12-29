@@ -47,12 +47,8 @@ jobs:
         java-version: '17'
     - name: Install ANTLR
       run: pip install antlr4-tools
-    - name: Generate
-      run: go generate ./...
-    - name: Test
-      run: go test -v ./...
-    - name: Build
-      run: go build -o scadformat.exe cmd/main.go
+    - name: Build and Test
+      run: make
     - name: Zip Artifact
       run: powershell Compress-Archive scadformat.exe windows.zip
     - name: Upload Artifact
@@ -81,12 +77,8 @@ jobs:
         java-version: '17'
     - name: Install ANTLR
       run: pip install antlr4-tools
-    - name: Generate
-      run: go generate ./...
-    - name: Test
-      run: go test -v ./...
-    - name: Build
-      run: go build -o scadformat cmd/main.go
+    - name: Build and Test
+      run: make
     - name: Zip Artifact
       run: zip macos.zip scadformat
     - name: Upload Artifact
@@ -115,12 +107,8 @@ jobs:
         java-version: '17'
     - name: Install ANTLR
       run: pip install antlr4-tools
-    - name: Generate
-      run: go generate ./...
-    - name: Test
-      run: go test -v ./...
-    - name: Build
-      run: go build -o scadformat cmd/main.go
+    - name: Build and Test
+      run: make
     - name: Zip Artifact
       run: zip linux.zip scadformat
     - name: Upload Artifact

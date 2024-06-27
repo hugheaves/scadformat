@@ -56,18 +56,18 @@ statement
 ------------------
 */
 statement:
-	semicolon // is semicolon
-	| innerInput
-	| moduleInstantiation
-	| assignment // ends in semicolon
-	| moduleDefinition // no semicolon
-	| functionDefinition; // ends in semicolon
+    semicolon // is semicolon
+    | innerInput
+    | moduleInstantiation
+    | assignment // ends in semicolon
+    | moduleDefinition // no semicolon
+    | functionDefinition; // ends in semicolon
 
 moduleDefinition:
-	MODULE ID L_PAREN parameters R_PAREN statement;
+    MODULE ID L_PAREN parameters R_PAREN statement;
 
 functionDefinition:
-	FUNCTION ID L_PAREN parameters R_PAREN EQUALS expr SEMICOLON;
+    FUNCTION ID L_PAREN parameters R_PAREN EQUALS expr SEMICOLON;
 
 /*
 Equivalent from parser.y:
@@ -104,10 +104,12 @@ module_instantiation
 ------------------
 */
 moduleInstantiation:
-	modifierCharacters (
-		singleModuleInstantiation // Note: childStatement moved to singleModuleInstantiation
-		| ifElseStatement
-	);
+    modifierCharacters (
+        singleModuleInstantiation // childStatement moved to singleModuleInstantiation
+        | ifElseStatement
+        | forStatement
+            // added for statement to support different formatting than singleModuleInstantiation
+    );
 
 /*
 Equivalent from parser.y:
@@ -141,9 +143,9 @@ child_statement
 ------------------
 */
 childStatement:
-	semicolon
-	| childStatements
-	| moduleInstantiation;
+    semicolon
+    | childStatements
+    | moduleInstantiation;
 
 /*
 Equivalent from parser.y:
@@ -175,6 +177,8 @@ module_id
 */
 moduleId: ID | FOR | LET | ASSERT | ECHO | EACH;
 
+forStatement: FOR L_PAREN arguments R_PAREN childStatement;
+
 /*
 Equivalent from parser.y:
 ------------------
@@ -184,7 +188,7 @@ single_module_instantiation
  ------------------
 */
 singleModuleInstantiation:
-	moduleId L_PAREN arguments R_PAREN childStatement;
+    moduleId L_PAREN arguments R_PAREN childStatement;
 
 /*
 Equivalent from parser.y:
@@ -200,14 +204,14 @@ expr
 ------------------
 */
 expr:
-	call										# callExpr
-	| expr binaryOperator expr					# binaryExpr
-	| ('!' | MINUS | PLUS) expr					# unary
-	| FUNCTION '(' parameters ')' expr			# functionDef
-	| expr QUESTION_MARK expr COLON expr		# ternaryExpr
-	| LET L_PAREN arguments R_PAREN expr		# letExpr
-	| ASSERT L_PAREN arguments R_PAREN expr?	# assertion
-	| ECHO L_PAREN arguments R_PAREN expr?		# echo;
+    call                                     # callExpr
+    | expr binaryOperator expr               # binaryExpr
+    | ('!' | MINUS | PLUS) expr              # unaryExpr
+    | FUNCTION '(' parameters ')' expr       # functionLiteralExpr
+    | expr QUESTION_MARK expr COLON expr     # ternaryExpr
+    | LET L_PAREN arguments R_PAREN expr     # letExpr
+    | ASSERT L_PAREN arguments R_PAREN expr? # assertExpr
+    | ECHO L_PAREN arguments R_PAREN expr?   # echoExpr;
 
 /*
 Equivalent from parser.y:
@@ -219,11 +223,12 @@ call
         | call '.' TOK_ID
 ------------------
 */
-call:
-	primary								# primaryElem
-	| call L_PAREN arguments R_PAREN	# functionCall
-	| call L_BRACKET expr R_BRACKET		# arrayAccess
-	| call '.' ID						# memberAccess;
+call: primary access*;
+
+access:
+    L_PAREN arguments R_PAREN  # functionAccess
+    | L_BRACKET expr R_BRACKET # arrayAccess
+    | '.' ID                   # memberAccess;
 
 /*
 Equivalent from parser.y:
@@ -241,41 +246,50 @@ primary
         | '[' ']'
         | '[' vector_elements optional_trailing_comma ']'
 		;
-------------------
-*/
-primary:
-	(TRUE | FALSE | UNDEF | NUMBER | STRING | ID)				# literalOrId
-	| L_PAREN expr R_PAREN										# parenthetical
-	| L_BRACKET expr COLON expr (COLON expr)? R_BRACKET			# range
-	| L_BRACKET R_BRACKET										# emptyVector
-	| L_BRACKET vectorElements optionalTrailingComma R_BRACKET	# vector;
 
-binaryOperator:
-	'*'
-	| '/'
-	| '%'
-	| PLUS
-	| MINUS
-	| POW
-	| '<'
-	| LE
-	| EQ
-	| NE
-	| GE
-	| '>'
-	| AND
-	| OR;
-
-/*
-Equivalent from parser.y:
-------------------
 vector_elements
         : vector_element
         | vector_elements ',' vector_element
         ;
 ------------------
 */
-vectorElements: vectorElement (comma vectorElement)*;
+primary:
+    literal
+    | id
+    | parenthetical
+    | range
+    | emptyVect
+    | vector;
+
+literal: TRUE | FALSE | UNDEF | NUMBER | STRING;
+
+id: ID;
+
+parenthetical: L_PAREN expr R_PAREN;
+
+range: L_BRACKET expr COLON expr (COLON expr)? R_BRACKET;
+
+emptyVect: L_BRACKET R_BRACKET;
+
+vector:
+    L_BRACKET vectorElement (comma vectorElement)* comma? R_BRACKET;
+
+binaryOperator:
+    '*'
+    | '/'
+    | '%'
+    | PLUS
+    | MINUS
+    | POW
+    | '<'
+    | LE
+    | EQ
+    | NE
+    | GE
+    | '>'
+    | AND
+    | OR;
+
 
 /*
 Equivalent from parser.y:
@@ -291,10 +305,11 @@ list_comprehension_elements
 ------------------
 */
 listComprehensionElements:
-	LET L_PAREN arguments R_PAREN listComprehensionElementsP							# letStatement
-	| EACH vectorElement																# eachStatement
-	| FOR L_PAREN arguments (SEMICOLON expr SEMICOLON arguments)? R_PAREN vectorElement	# forStatement
-	| IF L_PAREN expr R_PAREN vectorElement (ELSE vectorElement)?                       # ifStatementComprehension;
+    LET L_PAREN arguments R_PAREN listComprehensionElementsP                            # letStatementComprehension
+    | EACH vectorElement                                                                # eachStatementComprehension
+    | FOR L_PAREN arguments (SEMICOLON expr SEMICOLON arguments)? R_PAREN vectorElement #
+        forStatementComprehension
+    | IF L_PAREN expr R_PAREN vectorElement (ELSE vectorElement)? # ifStatementComprehension;
 
 /*
 Equivalent from parser.y:
@@ -307,8 +322,8 @@ list_comprehension_elements_p
 ------------------
 */
 listComprehensionElementsP:
-	listComprehensionElements
-	| L_PAREN listComprehensionElements R_PAREN;
+    listComprehensionElements
+    | L_PAREN listComprehensionElements R_PAREN;
 
 /*
 Equivalent from parser.y:
@@ -339,8 +354,8 @@ parameter
 ------------------
 */
 parameters:
-	// empty
-	| parameter (comma parameter)* optionalTrailingComma;
+    // empty
+    | parameter (comma parameter)* optionalTrailingComma;
 
 parameter: ID | assignmentExpression;
 
@@ -364,8 +379,8 @@ argument
 ------------------
 */
 arguments:
-	// empty
-	| argument ( comma argument)* optionalTrailingComma;
+    // empty
+    | argument ( comma argument)* optionalTrailingComma;
 
 argument: expr | assignmentExpression;
 
@@ -442,9 +457,9 @@ ID: '$'? ( LETTER | DIGIT | UNDERSCORE)+;
 NUMBER: ( FLOAT | INTEGER);
 
 FLOAT:
-	DIGIT+ FLOAT_EXPONENT?
-	| DIGIT* '.' DIGIT+ FLOAT_EXPONENT?
-	| DIGIT+ '.' DIGIT* FLOAT_EXPONENT?;
+    DIGIT+ FLOAT_EXPONENT?
+    | DIGIT* '.' DIGIT+ FLOAT_EXPONENT?
+    | DIGIT+ '.' DIGIT* FLOAT_EXPONENT?;
 
 INTEGER: DIGIT+;
 
@@ -487,9 +502,9 @@ fragment FLOAT_EXPONENT: [eE] [+-]? DIGIT+;
 fragment STRING_CHAR: ~["\\] | ESCAPE_SEQUENCE;
 
 fragment ESCAPE_SEQUENCE:
-	'\\' ["\\rnt]
-	| OCTAL_ESCAPE_SEQUENCE
-	| UNICODE_ESCAPE_SEQUENCE;
+    '\\' ["\\rnt]
+    | OCTAL_ESCAPE_SEQUENCE
+    | UNICODE_ESCAPE_SEQUENCE;
 
 fragment OCTAL_ESCAPE_SEQUENCE: '\\' OCTAL_DIGIT+;
 

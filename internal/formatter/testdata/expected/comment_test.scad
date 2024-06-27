@@ -1,6 +1,6 @@
 /*
-   Hello, this is a multiline comment.
-   It describes some stuff about the file
+Hello, this is a multiline comment.
+It describes some stuff about the file
 */
 
 // sometimes we use single line comments

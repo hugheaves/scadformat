@@ -29,10 +29,10 @@ import (
 type TokenFormatter struct {
 	settings      *FormatSettings
 	writer        io.Writer
-	currentIndent int
-	linePos       int
-	inLine        bool
-	wrappedLine   bool
+	currentIndent int  // current indent size for new lines
+	linePos       int  // position that next character will be written to the line
+	inLine        bool // true if the current line contains text
+	wrappedLine   bool // true if the previous print statement caused the text to wrap to the next line
 }
 
 func NewTokenFormatter(settings *FormatSettings, writer io.Writer) *TokenFormatter {
@@ -49,25 +49,24 @@ func NewTokenFormatter(settings *FormatSettings, writer io.Writer) *TokenFormatt
 func (tokenFormatter *TokenFormatter) printString(strVal string) error {
 	zap.L().Debug("printString |" + strVal + "|")
 	lines := strings.Split(strVal, "\n")
-	for i := 0; i < len(lines)-1; i++ {
-		err := tokenFormatter.printWithLineWrap(lines[i])
+	for i, line := range lines {
+		err := tokenFormatter.printWithLineWrap(line)
 		if err != nil {
 			return err
 		}
-		err = tokenFormatter.printNewLine()
-		if err != nil {
-			return err
-		}
-	}
-	if len(lines) > 0 {
-		err := tokenFormatter.printWithLineWrap(lines[len(lines)-1])
-		if err != nil {
-			return err
+		if i < len(lines)-1 {
+			err = tokenFormatter.printNewLine()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
+// prints a string on the current line. If the length of the string exceeds
+// the remaining space on the line, the text is printed on a new line, with
+// additional indention applied to indicate that the line was wrapped.
 func (tokenFormatter *TokenFormatter) printWithLineWrap(strVal string) error {
 	if tokenFormatter.inLine && len(strVal) > tokenFormatter.lineRemaining() {
 		err := tokenFormatter.printNewLine()
@@ -81,6 +80,7 @@ func (tokenFormatter *TokenFormatter) printWithLineWrap(strVal string) error {
 	return err
 }
 
+// printSpace adds a space to the line, if the current line contains is not empty. Otherwise, this function does nothing.
 func (tokenFormatter *TokenFormatter) printSpace() error {
 	if tokenFormatter.inLine {
 		err := tokenFormatter.printWithLineWrap(" ")
@@ -91,6 +91,7 @@ func (tokenFormatter *TokenFormatter) printSpace() error {
 	return nil
 }
 
+// endLine calls printNewLine if the current line is not empty. Otherwise, it does nothing.
 func (tokenFormatter *TokenFormatter) endLine() error {
 	if tokenFormatter.inLine {
 		err := tokenFormatter.printNewLine()
@@ -101,6 +102,8 @@ func (tokenFormatter *TokenFormatter) endLine() error {
 	return nil
 }
 
+// printNewLine prints a new line character, and removes any
+// indentation applied by printWithLineWrap.
 func (tokenFormatter *TokenFormatter) printNewLine() error {
 	_, err := fmt.Fprintln(tokenFormatter.writer)
 	if err != nil {
@@ -123,11 +126,12 @@ func (tokenFormatter *TokenFormatter) lineRemaining() int {
 	}
 }
 
+// appendToLine appends a string to the current line. If the line is empty,
+// outputIndent is called to indent the line before adding the string.
 func (tokenFormatter *TokenFormatter) appendToLine(strVal string) error {
 	if len(strVal) == 0 {
 		return nil
 	}
-
 	if !tokenFormatter.inLine {
 		tokenFormatter.outputIndent()
 		tokenFormatter.inLine = true

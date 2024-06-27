@@ -38,7 +38,7 @@ type FormattingVisitor struct {
 	tokenStream          antlr.TokenStream
 	formatter            *TokenFormatter
 	deferredCommentIndex int
-	arrayDepth           int // stores nested array element "depth" during array formatting
+	endLineAfterComma    bool
 }
 
 func NewFormattingVisitor(tokenStream antlr.TokenStream, formatter *TokenFormatter) *FormattingVisitor {
@@ -46,7 +46,6 @@ func NewFormattingVisitor(tokenStream antlr.TokenStream, formatter *TokenFormatt
 		tokenStream:          tokenStream,
 		formatter:            formatter,
 		deferredCommentIndex: -1,
-		arrayDepth:           0,
 	}
 
 	// Override VisitChildren in BaseOpenClassVisitor
@@ -130,6 +129,13 @@ func (v *FormattingVisitor) VisitBinaryExpr(ctx *parser.BinaryExprContext) inter
 
 func (v *FormattingVisitor) VisitTernaryExpr(ctx *parser.TernaryExprContext) interface{} {
 	zap.L().Debug("visitTernaryExprContext")
+
+	// for _, childCtx := range ctx.GetChildren() {
+	// 	if _, ok := childCtx.(parser.IStatementContext); ok {
+	// 		v.Visit(childCtx.(antlr.RuleContext))
+	// 	}
+	// }
+
 	v.Visit(ctx.Expr(0))
 	v.formatter.printSpace()
 	v.Visit(ctx.QUESTION_MARK())
@@ -196,10 +202,12 @@ func (v *FormattingVisitor) VisitFunctionDefinition(ctx *parser.FunctionDefiniti
 	v.Visit(ctx.R_PAREN())
 	v.formatter.printSpace()
 	v.Visit(ctx.EQUALS())
-	v.formatter.printSpace()
+	v.formatter.endLine()
+	v.formatter.indent()
 	v.Visit(ctx.Expr())
 	v.Visit(ctx.SEMICOLON())
 	v.formatter.endLine()
+	v.formatter.unindent()
 	return nil
 }
 
@@ -212,6 +220,65 @@ func (v *FormattingVisitor) VisitModuleDefinition(ctx *parser.ModuleDefinitionCo
 	v.Visit(ctx.Parameters())
 	v.Visit(ctx.R_PAREN())
 	v.Visit(ctx.Statement())
+	return nil
+}
+
+// func (v *FormattingVisitor) VisitExpr(ctx *parser.ExprContext) interface{} {
+// 	if ctx.TernaryExpr() != nil {
+// 		v.Visit(ctx.Expr())
+// 		v.formatter.printSpace()
+// 		v.Visit(ctx.TernaryExpr())
+// 		return nil
+// 	} else if ctx.BinaryExpr() != nil {
+// 		v.Visit(ctx.Expr())
+// 		v.formatter.printSpace()
+// 		v.Visit(ctx.BinaryExpr())
+// 		return nil
+// 	} else {
+// 		return v.VisitChildren(ctx)
+// 	}
+// }
+
+func (v *FormattingVisitor) VisitAssertExpr(ctx *parser.AssertExprContext) interface{} {
+	v.Visit(ctx.ASSERT())
+	v.formatter.printSpace()
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Arguments())
+	v.Visit(ctx.R_PAREN())
+	if ctx.Expr() != nil {
+		v.formatter.endLine()
+		v.formatter.indent()
+		v.Visit(ctx.Expr())
+		v.formatter.unindent()
+	}
+	return nil
+}
+
+func (v *FormattingVisitor) VisitEchoExpr(ctx *parser.EchoExprContext) interface{} {
+	v.Visit(ctx.ECHO())
+	v.formatter.printSpace()
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Arguments())
+	v.Visit(ctx.R_PAREN())
+	if ctx.Expr() != nil {
+		v.formatter.endLine()
+		v.formatter.indent()
+		v.Visit(ctx.Expr())
+		v.formatter.unindent()
+	}
+	return nil
+}
+
+func (v *FormattingVisitor) VisitLetExpr(ctx *parser.LetExprContext) interface{} {
+	v.Visit(ctx.LET())
+	v.formatter.printSpace()
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Arguments())
+	v.Visit(ctx.R_PAREN())
+	v.formatter.endLine()
+	v.formatter.indent()
+	v.Visit(ctx.Expr())
+	v.formatter.unindent()
 	return nil
 }
 
@@ -260,38 +327,105 @@ func (v *FormattingVisitor) VisitArrayAccess(ctx *parser.ArrayAccessContext) int
 }
 
 func (v *FormattingVisitor) VisitVector(ctx *parser.VectorContext) interface{} {
-	zap.L().Debug("Visiting vector")
+	zap.S().Debugf("VisitingVector %s", ctx.GetText())
 
-	v.arrayDepth++
-
-	if v.arrayDepth > 1 {
+	// Determine if this vector has other vectors
+	// or list comprehension elements nested inside
+	nested := false
+	for _, ve := range ctx.AllVectorElement() {
+		if ve.ListComprehensionElementsP() != nil {
+			nested = true
+		} else {
+			expr := ve.Expr()
+			if expr != nil {
+				ec, ok := expr.(*parser.CallExprContext)
+				if ok {
+					if ec.Call().Primary().Vector() != nil {
+						nested = true
+					}
+				}
+			}
+		}
+	}
+	v.Visit(ctx.L_BRACKET())
+	if nested {
 		v.formatter.endLine()
 		v.formatter.indent()
 	}
-	v.Visit(ctx.L_BRACKET())
-	v.Visit(ctx.VectorElements())
-	v.Visit(ctx.R_BRACKET())
-	if v.arrayDepth > 1 {
-		v.formatter.unindent()
-		nextToken := v.tokenStream.Get(ctx.R_BRACKET().GetSymbol().GetTokenIndex() + 1)
-		if nextToken.GetTokenType() != parser.OpenSCADLexerCOMMA {
+	for i, ve := range ctx.AllVectorElement() {
+		v.Visit(ve)
+		if ctx.Comma(i) != nil {
+			v.Visit(ctx.Comma(i))
+		}
+		if nested {
 			v.formatter.endLine()
 		}
 	}
-
-	v.arrayDepth--
-
+	if nested {
+		v.formatter.unindent()
+	}
+	v.Visit(ctx.R_BRACKET())
 	return nil
 }
 
-func (v *FormattingVisitor) VisitForStatement(ctx *parser.ForStatementContext) interface{} {
+func (v *FormattingVisitor) VisitForStatementComprehension(ctx *parser.ForStatementComprehensionContext) interface{} {
+	v.Visit(ctx.FOR())
 	v.formatter.printSpace()
-	return v.VisitChildren(ctx)
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Arguments(0))
+	if ctx.SEMICOLON(0) != nil {
+		v.Visit(ctx.SEMICOLON(0))
+		v.Visit(ctx.Expr())
+		v.Visit(ctx.SEMICOLON(1))
+		v.Visit(ctx.Arguments(1))
+	}
+	v.Visit(ctx.R_PAREN())
+	v.formatter.endLine()
+	v.formatter.indent()
+	v.Visit(ctx.VectorElement())
+	v.formatter.unindent()
+	return nil
 }
 
-func (v *FormattingVisitor) VisitLetStatement(ctx *parser.LetStatementContext) interface{} {
+func (v *FormattingVisitor) VisitLetStatementComprehension(ctx *parser.LetStatementComprehensionContext) interface{} {
+	v.Visit(ctx.LET())
 	v.formatter.printSpace()
-	return v.VisitChildren(ctx)
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Arguments())
+	v.Visit(ctx.R_PAREN())
+	v.formatter.endLine()
+	v.formatter.indent()
+	v.Visit(ctx.ListComprehensionElementsP())
+	v.formatter.unindent()
+	return nil
+}
+
+func (v *FormattingVisitor) VisitEachStatementComprehension(ctx *parser.EachStatementComprehensionContext) interface{} {
+	v.Visit(ctx.EACH())
+	v.formatter.printSpace()
+	v.Visit(ctx.VectorElement())
+	return nil
+}
+
+func (v *FormattingVisitor) VisitIfStatementComprehension(ctx *parser.IfStatementComprehensionContext) interface{} {
+	v.Visit(ctx.IF())
+	v.formatter.printSpace()
+	v.Visit(ctx.L_PAREN())
+	v.Visit(ctx.Expr())
+	v.Visit(ctx.R_PAREN())
+	v.formatter.endLine()
+	v.formatter.indent()
+	v.Visit(ctx.VectorElement(0))
+	v.formatter.unindent()
+	if ctx.ELSE() != nil {
+		v.formatter.endLine()
+		v.Visit(ctx.ELSE())
+		v.formatter.endLine()
+		v.formatter.indent()
+		v.Visit(ctx.VectorElement(1))
+		v.formatter.unindent()
+	}
+	return nil
 }
 
 func (v *FormattingVisitor) VisitIfElseStatement(ctx *parser.IfElseStatementContext) interface{} {
@@ -317,7 +451,12 @@ func (v *FormattingVisitor) VisitIfStatement(ctx *parser.IfStatementContext) int
 
 func (v *FormattingVisitor) VisitComma(ctx *parser.CommaContext) interface{} {
 	v.Visit(ctx.COMMA())
-	v.formatter.printSpace()
+	if v.endLineAfterComma {
+		v.formatter.endLine()
+		v.endLineAfterComma = false
+	} else {
+		v.formatter.printSpace()
+	}
 	return nil
 }
 
@@ -348,11 +487,11 @@ loop:
 				break loop
 			} else {
 				zap.S().Debugf("Printing single line comment, token index = %d, text=[%s]", i, token.GetText())
-				v.printComment(token)
+				v.printSingleLineComment(token)
 			}
 		case parser.OpenSCADLexerMULTILINE_COMMENT:
 			zap.S().Debugf("Printing multiline comment, token index = %d, text=[%s]", i, token.GetText())
-			v.printComment(token)
+			v.printMultilineComment(token)
 		case parser.OpenSCADLexerMULTI_NEWLINE:
 			zap.S().Debugf("Printing multinewline comment, token index = %d, text=[%s]", i, token.GetText())
 			v.printMultiNewlineComment(token.GetText())
@@ -372,15 +511,33 @@ func (v *FormattingVisitor) printMultiNewlineComment(text string) {
 	}
 }
 
-func (v *FormattingVisitor) printComment(token antlr.Token) {
-	var commentText string
-	if token.GetTokenType() == parser.OpenSCADLexerSINGLE_LINE_COMMENT {
-		commentText = strings.TrimSpace(token.GetText())
-	} else {
-		commentText = token.GetText()
+func (v *FormattingVisitor) printMultilineComment(token antlr.Token) error {
+	v.formatter.endLine()
+	strVal := strings.TrimSpace(token.GetText())
+	lines := strings.Split(strVal, "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		// if i > 0 && i < len(lines)-1 {
+		// 	if !strings.HasPrefix(line, "*") {
+		// 		v.formatter.printString(" ")
+		// 	}
+		// }
+		err := v.formatter.printWithLineWrap(line)
+		if err != nil {
+			return err
+		}
+		if i < len(lines)-1 {
+			err = v.formatter.printNewLine()
+			if err != nil {
+				return err
+			}
+		}
 	}
-	v.formatter.printString(commentText)
-	if token.GetTokenType() == parser.OpenSCADLexerSINGLE_LINE_COMMENT || token.GetTokenType() == parser.OpenSCADLexerMULTILINE_COMMENT {
-		v.formatter.endLine()
-	}
+	v.formatter.endLine()
+	return nil
+}
+
+func (v *FormattingVisitor) printSingleLineComment(token antlr.Token) {
+	v.formatter.printString(strings.TrimSpace(token.GetText()))
+	v.formatter.endLine()
 }

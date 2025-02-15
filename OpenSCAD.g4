@@ -44,7 +44,7 @@ includeOrUseFile: INCLUDE_OR_USE_FILE;
 Equivalent from parser.y:
 ------------------
 statement
-        : 
+        :
         ';'
         | '{' inner_input '}'
         | module_instantiation
@@ -108,7 +108,7 @@ moduleInstantiation:
         singleModuleInstantiation // childStatement moved to singleModuleInstantiation
         | ifElseStatement
         | forStatement
-            // added for statement to support different formatting than singleModuleInstantiation
+           // added for statement to support different formatting than singleModuleInstantiation
     );
 
 /*
@@ -166,7 +166,7 @@ Equivalent from parser.y:
 ------------------
 // "for", "let" and "each" are valid module identifiers
 module_id
-        : TOK_ID 
+        : TOK_ID
         | TOK_FOR
         | TOK_LET
         | TOK_ASSERT
@@ -281,12 +281,12 @@ binaryOperator:
     | PLUS
     | MINUS
     | POW
-    | '<'
+    | LT
     | LE
     | EQ
     | NE
     | GE
-    | '>'
+    | GT
     | AND
     | OR;
 
@@ -424,6 +424,10 @@ NE: '!=';
 
 LE: '<=';
 
+LT: '<';
+
+GT: '>';
+
 AND: '&&';
 
 OR: '||';
@@ -472,7 +476,10 @@ POW: '^';
 STRING: '"' STRING_CHAR* '"';
 
 // Note: All comments are sent to channel #2
-SINGLE_LINE_COMMENT: EOL? SPACES '//' ~[\r\n]* -> channel ( 2 );
+
+SINGLE_LINE_COMMENT: EOL SPACES '//' ~[\r\n]* -> channel ( 2 );
+
+END_OF_LINE_COMMENT: SPACES '//' ~[\r\n]* -> channel ( 2 );
 
 // Multiple newlines are handled as "comments"
 MULTI_NEWLINE: SPACES_EOL_SPACES EOL_SPACES+ -> channel ( 2 );

@@ -108,6 +108,7 @@ func (f *Formatter) formatStdio() error {
 }
 
 func (f *Formatter) formatBytes(input []byte) ([]byte, error) {
+	zap.S().Debug("formatBytes")
 	antlrStream := antlr.NewIoStream(bytes.NewBuffer(input))
 	lexer := parser.NewOpenSCADLexer(antlrStream)
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)

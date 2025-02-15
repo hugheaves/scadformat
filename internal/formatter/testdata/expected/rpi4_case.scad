@@ -27,7 +27,7 @@ tab_screw_diameter = 4;
 
 screw_head_diameter = 5.4;
 screw_head_thickness = 2;
-screw_thread_major_diameter = 3;// Note: pcb has 2.7mm hole on mechanical drawing
+screw_thread_major_diameter = 3; // Note: pcb has 2.7mm hole on mechanical drawing
 screw_thread_minor_diameter = 2.4;
 
 pcb_length = 85;
@@ -38,7 +38,7 @@ pcb_screw_length_offset = 58 + pcb_screw_offset;
 pcb_thickness = 1.6;
 pcb_back_clearance = 3.6;
 
-pcb_standoff_diameter = 6.2;// Note: 6mm wide pad on mechanical drawing
+pcb_standoff_diameter = 6.2; // Note: 6mm wide pad on mechanical drawing
 
 jack_length = 20;
 jack_overhang = 4;
@@ -327,14 +327,14 @@ module bottom() {
 
     translate([case_thickness + length_wall_gap, case_thickness + width_wall_gap, 0]) {
 
-    // screw holes
+      // screw holes
       for(pcb_screw_position = pcb_screw_positions)
         translate(pcb_screw_position) {
           cylinder(h = pcb_back_clearance + case_thickness, d = screw_thread_major_diameter);
           cylinder(h = screw_head_thickness, d = screw_head_diameter);
         }
 
-        // connector holes
+      // connector holes
       translate([0, 0, pcb_back_clearance + case_thickness + pcb_thickness])
         connectors();
 

@@ -38,6 +38,15 @@ const (
 	expectedDir     = "testdata/expected"
 )
 
+func TestMain(m *testing.M) {
+	err := logutil.ConfigureLogging("")
+	if err != nil {
+		panic(err)
+	}
+	code := m.Run()
+	os.Exit(code)
+}
+
 func TestFormat(t *testing.T) {
 	runTestOnDir(t, validInputDir, func(t *testing.T) {
 		testData := readTestData(t, validInputDir)
@@ -110,7 +119,6 @@ func TestUpdate(t *testing.T) {
 }
 
 func runTestOnDir(t *testing.T, dir string, testFunc func(t *testing.T)) {
-	logutil.ConfigureLogging("info")
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			t.Fatal(err)

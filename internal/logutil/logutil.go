@@ -19,16 +19,24 @@
 package logutil
 
 import (
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 func ConfigureLogging(logLevel string) error {
+	if logLevel == "" {
+		logLevel = os.Getenv("LOG_LEVEL")
+	}
+	if logLevel == "" {
+		logLevel = "error"
+	}
+
 	level, err := zap.ParseAtomicLevel(logLevel)
 	if err != nil {
 		return err
 	}
-
 	encoderConfig := zap.NewDevelopmentEncoderConfig()
 	encoderConfig.TimeKey = zapcore.OmitKey
 	if !level.Enabled(zap.DebugLevel) {

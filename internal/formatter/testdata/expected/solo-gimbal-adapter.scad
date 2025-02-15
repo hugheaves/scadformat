@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ************************************************/
 
 // Select the part you would like to display
-part = "adapter";// [adapter:Adapter,retaining_clip:Retaining clip,back_weight:Back Weight,side_weight:Side Weight]
+part = "adapter"; // [adapter:Adapter,retaining_clip:Retaining clip,back_weight:Back Weight,side_weight:Side Weight]
 
 /********************
 * MAIN PARAMETERS *
@@ -36,28 +36,28 @@ part = "adapter";// [adapter:Adapter,retaining_clip:Retaining clip,back_weight:B
 
 /* [Adapter Parameters] */
 // Length of camera body (side to side)
-camera_length = 59.4;// [57:62]
+camera_length = 59.4; // [57:62]
 // Width of camera body (top to bottom)
-camera_width = 41.1;// [38:42]
+camera_width = 41.1; // [38:42]
 // Height of camera body (front to back)
-camera_height = 19.6;// [15:40]
+camera_height = 19.6; // [15:40]
 
 // Adapter arm bump size (How far out the "bumps" protrude on the ends of the arms)
-adapter_arm_bump_size = 2.5;// [1:5]
+adapter_arm_bump_size = 2.5; // [1:5]
 
 /* [Back Weight Parameters] */
 // The length of the counterbalance weight on the back of the camera. Larger values make it heavier.
-back_weight_length = 29;// [10:40]
+back_weight_length = 29; // [10:40]
 
 // The offset of the weight on the back of the gimbal. Values greater than zero move the weight to the outer side of the gimbal
-back_weight_offset = 0;// [0:20]
+back_weight_offset = 0; // [0:20]
 
 /* [Side Weight Parameters] */
 // The thickness of the side weight, thicker is heavier
-side_weight_thickness = 4;// [4:8]
+side_weight_thickness = 4; // [4:8]
 
 // The length of the side weight, longer is heavier
-side_weight_length = 10;// [9:17]
+side_weight_length = 10; // [9:17]
 
 /********************
 * OTHER PARAMETERS *
@@ -68,7 +68,7 @@ side_weight_length = 10;// [9:17]
 camera_offset = 3.2;
 
 /* Dimensions of the base of the camera adapter, so that it is a nice snug fit inside the 3DR gimbal mount */
-base_height = 8;// (thickness) thick enough to clear the GoPro plug in the back
+base_height = 8; // (thickness) thick enough to clear the GoPro plug in the back
 base_width = 42;
 base_length = 60;
 
@@ -104,7 +104,7 @@ side_wall_offset = 59.4;
 
 // height of hook on bottom left of "gimbal bracket"
 hook_width = 17.6;
-hook_height = 2.5;// distance from bottom
+hook_height = 2.5; // distance from bottom
 hook_length = 4;
 hook_thickness = 1;
 

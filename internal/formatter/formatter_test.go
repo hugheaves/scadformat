@@ -33,9 +33,9 @@ import (
 )
 
 const (
-	validInputDir   = "testdata/valid"
-	invalidInputDir = "testdata/invalid"
-	expectedDir     = "testdata/expected"
+	validInputDir   = "testdata" + string(os.PathSeparator) + "valid"
+	invalidInputDir = "testdata" + string(os.PathSeparator) + "invalid"
+	expectedDir     = "testdata" + string(os.PathSeparator) + "expected"
 )
 
 func TestMain(m *testing.M) {
@@ -101,7 +101,7 @@ func TestReformat(t *testing.T) {
 // This is not actually a test - it updates the contents of the "expected" testdata
 // with the output of the formatter.
 func TestUpdate(t *testing.T) {
-	//t.Skip()
+	t.Skip()
 
 	runTestOnDir(t, validInputDir, func(t *testing.T) {
 		validInput := readTestData(t, validInputDir)
@@ -142,7 +142,8 @@ func runTestOnDir(t *testing.T, dir string, testFunc func(t *testing.T)) {
 }
 
 func readTestData(t *testing.T, dir string) []byte {
-	filename := filepath.Join(dir, strings.Join(strings.Split(t.Name(), string(os.PathSeparator))[1:], string(os.PathSeparator)))
+	testfilepath := strings.Split(t.Name(), string("/"))[1:] // remove top level test name
+	filename := filepath.Join(dir, strings.Join(testfilepath, string(os.PathSeparator)))
 	validInput, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal("error reading test file:", err)
@@ -151,7 +152,8 @@ func readTestData(t *testing.T, dir string) []byte {
 }
 
 func writeTestData(t *testing.T, dir string, data []byte) {
-	filename := filepath.Join(dir, strings.Join(strings.Split(t.Name(), string(os.PathSeparator))[1:], string(os.PathSeparator)))
+	testfilepath := strings.Split(t.Name(), string("/"))[1:] // remove top level test name
+	filename := filepath.Join(dir, strings.Join(testfilepath, string(os.PathSeparator)))
 	err := os.WriteFile(filename, data, 0666)
 	if err != nil {
 		t.Fatal("error writing test file:", err)

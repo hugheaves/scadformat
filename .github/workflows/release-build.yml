@@ -37,7 +37,7 @@ jobs:
         # Workaround for https://github.com/actions/checkout/issues/290
       run: git fetch --force --tags
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v5
       with:
         go-version: '1.23.x'
     - name: Setup Java
@@ -67,7 +67,7 @@ jobs:
         # Workaround for https://github.com/actions/checkout/issues/290
       run: git fetch --force --tags
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v5
       with:
         go-version: '1.23.x'
     - name: Setup Java
@@ -97,7 +97,7 @@ jobs:
         # Workaround for https://github.com/actions/checkout/issues/290
       run: git fetch --force --tags
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v5
       with:
         go-version: '1.23.x'
     - name: Setup Java

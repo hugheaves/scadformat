@@ -17,7 +17,8 @@ jobs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: build-artifacts
+        name: build-artifacts-*
+        merge-multiple: true
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
@@ -54,7 +55,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts
+        name: build-artifacts-windows
         path: windows.zip
 
   build-macos:
@@ -84,7 +85,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts
+        name: build-artifacts-macos
         path: macos.zip
 
   build-linux:
@@ -114,5 +115,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts
+        name: build-artifacts-linux
         path: linux.zip

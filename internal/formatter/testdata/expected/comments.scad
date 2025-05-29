@@ -1,6 +1,6 @@
 /*
-This is a multiline
-comment.
+  This is a multiline
+  comment.
 
 */
 
@@ -13,10 +13,10 @@ comment.
 module main() {
   foo()
     bar();
-  /*
-  This is a another multiline
-  comment.
-  */
+    /*
+      This is a another multiline
+      comment.
+    */
 
   a = a + 1; // another single line comment
 }

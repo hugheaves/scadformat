@@ -1,6 +1,6 @@
 /*
-* Test formatting of floating point numbers
-*/
+ * Test formatting of floating point numbers
+ */
 a = 8.014786;
 b = .014786;
 c = 8.014786e+00;

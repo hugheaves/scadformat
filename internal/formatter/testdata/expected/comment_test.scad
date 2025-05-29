@@ -1,6 +1,6 @@
 /*
-Hello, this is a multiline comment.
-It describes some stuff about the file
+   Hello, this is a multiline comment.
+   It describes some stuff about the file
 */
 
 // sometimes we use single line comments
@@ -23,8 +23,7 @@ module foo(argument1) {
     // ====
     anotherFunction();
 
-    echo(i);
-    /* multiline commends at the end of line are not correctly handled */
+    echo(i); /* multiline comments at the end of line are correctly handled */
 
     if (i % 2 == 0) {
       echo("i is even"); // single line comment with a preceding space

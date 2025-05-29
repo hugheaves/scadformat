@@ -431,7 +431,9 @@ func (v *FormattingVisitor) printEndOfLineCommentAfter(tokenIndex int) {
 	}
 	token := v.tokenStream.Get(tokenIndex)
 	tokenType := token.GetTokenType()
-	if tokenType == parser.OpenSCADLexerEND_OF_LINE_COMMENT {
+	if tokenType == parser.OpenSCADLexerEND_OF_LINE_COMMENT ||
+		tokenType == parser.OpenSCADLexerEND_OF_LINE_COMMENT_BLOCK ||
+		tokenType == parser.OpenSCADLexerMULTILINE_COMMENT_BLOCK {
 		v.printCommentsBefore(tokenIndex)
 	}
 }
@@ -451,11 +453,17 @@ func (v *FormattingVisitor) printCommentToken(token antlr.Token) {
 	case parser.OpenSCADLexerSINGLE_LINE_COMMENT:
 		zap.S().Debugf("Printing SINGLE_LINE_COMMENT, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
 		v.printSingleLineComment(token)
-	case parser.OpenSCADLexerMULTILINE_COMMENT:
-		zap.S().Debugf("Printing MULTILINE_COMMENT, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
+	case parser.OpenSCADLexerEND_OF_LINE_COMMENT_BLOCK:
+		zap.S().Debugf("Printing END_OF_LINE_COMMENT_BLOCK: token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
+		v.printEndOfLineComment(token)
+	case parser.OpenSCADLexerSINGLE_LINE_COMMENT_BLOCK:
+		zap.S().Debugf("Printing SINGLE_LINE_COMMENT_BLOCK, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
+		v.printSingleLineComment(token)
+	case parser.OpenSCADLexerMULTILINE_COMMENT_BLOCK:
+		zap.S().Debugf("Printing MULTILINE_COMMENT_BLOCK, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
 		v.printMultilineComment(token)
 	case parser.OpenSCADLexerMULTI_NEWLINE:
-		zap.S().Debugf("Printing rMULTI_NEWLINE, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
+		zap.S().Debugf("Printing MULTI_NEWLINE, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
 		v.printMultiNewlineComment(token.GetText())
 	default:
 		zap.S().Debugf("skipping non-comment token, token index = %d", token.GetTokenIndex())
@@ -472,26 +480,17 @@ func (v *FormattingVisitor) printMultiNewlineComment(text string) {
 	}
 }
 
+// TO DO Implement re-formatting options for multiline comments.
 func (v *FormattingVisitor) printMultilineComment(token antlr.Token) error {
-	v.formatter.endLine()
-	strVal := strings.TrimSpace(token.GetText())
-	lines := strings.Split(strVal, "\n")
-	for i, line := range lines {
-		line = strings.TrimSpace(line)
-		// if i > 0 && i < len(lines)-1 {
-		// 	if !strings.HasPrefix(line, "*") {
-		// 		v.formatter.printString(" ")
-		// 	}
-		// }
-		err := v.formatter.printWithLineWrap(line)
+	lines := strings.Split(token.GetText(), "\n")
+	for _, line := range lines {
+		err := v.formatter.appendToLine(line, false)
 		if err != nil {
 			return err
 		}
-		if i < len(lines)-1 {
-			err = v.formatter.printNewLine()
-			if err != nil {
-				return err
-			}
+		err = v.formatter.printNewLine()
+		if err != nil {
+			return err
 		}
 	}
 	v.formatter.endLine()

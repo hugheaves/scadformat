@@ -481,10 +481,14 @@ SINGLE_LINE_COMMENT: EOL SPACES '//' ~[\r\n]* -> channel ( 2 );
 
 END_OF_LINE_COMMENT: SPACES '//' ~[\r\n]* -> channel ( 2 );
 
+SINGLE_LINE_COMMENT_BLOCK: EOL SPACES '/*' ~[\r\n]* '*/' -> channel ( 2 );
+
+END_OF_LINE_COMMENT_BLOCK: SPACES '/*' ~[\r\n]* '*/' -> channel ( 2 );
+
+MULTILINE_COMMENT_BLOCK: EOL? SPACES '/*' .*? '*/' -> channel ( 2 );
+
 // Multiple newlines are handled as "comments"
 MULTI_NEWLINE: SPACES_EOL_SPACES EOL_SPACES+ -> channel ( 2 );
-
-MULTILINE_COMMENT: '/*' .*? '*/' -> channel ( 2 );
 
 WHITESPACE: [ \t\r\n] -> skip;
 

@@ -17,15 +17,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /************************************************
-* PART SELECTION
-************************************************/
+ * PART SELECTION
+ ************************************************/
 
 // Select the part you would like to display
 part = "adapter"; // [adapter:Adapter,retaining_clip:Retaining clip,back_weight:Back Weight,side_weight:Side Weight]
 
 /********************
-* MAIN PARAMETERS *
-********************/
+ * MAIN PARAMETERS *
+ ********************/
 
 // No-name SJ4000 clone
 // camera_length = 59.8;
@@ -60,8 +60,8 @@ side_weight_thickness = 4; // [4:8]
 side_weight_length = 10; // [9:17]
 
 /********************
-* OTHER PARAMETERS *
-********************/
+ * OTHER PARAMETERS *
+ ********************/
 /* [Hidden] */
 
 /* How much to shift the camera to the right to avoid the curved protrusion from the pitch motor housing */
@@ -245,8 +245,8 @@ module weight_stud() {
 
 
 /********************************************
-* Top level function to render the adapter
-********************************************/
+ * Top level function to render the adapter
+ ********************************************/
 module adapter() {
 
   difference() {
@@ -274,8 +274,8 @@ module adapter() {
 }
 
 /********************************************
-* Top level function to render the retaining clip
-********************************************/
+ * Top level function to render the retaining clip
+ ********************************************/
 module retaining_clip() {
   bracket_inside_height = 11.4 + base_height - bracket_thickness;
 
@@ -307,8 +307,8 @@ module retaining_clip() {
 }
 
 /********************************************
-* Top level function to render the back / counterbalance weight
-********************************************/
+ * Top level function to render the back / counterbalance weight
+ ********************************************/
 module back_weight() {
   thickness = 2;
   length = 57.8;
@@ -367,8 +367,8 @@ module curve_cutout(beam_curve_diameter, beam_thickness) {
 }
 
 /********************************************
-* Top level function to render the side weight
-********************************************/
+ * Top level function to render the side weight
+ ********************************************/
 module side_weight() {
 
   side_weight_width = 2;

@@ -46,6 +46,13 @@ func NewTokenFormatter(settings *FormatSettings, writer io.Writer) *TokenFormatt
 	}
 }
 
+// prints a string directly to the output, with no line indentation, wrapping
+// or other reformatting
+func (tokenFormatter *TokenFormatter) printRaw(strVal string) error {
+	_, err := fmt.Fprint(tokenFormatter.writer, strVal)
+	return err
+}
+
 func (tokenFormatter *TokenFormatter) printString(strVal string) error {
 	zap.L().Debug("printString |" + strVal + "|")
 	lines := strings.Split(strVal, "\n")
@@ -76,7 +83,7 @@ func (tokenFormatter *TokenFormatter) printWithLineWrap(strVal string) error {
 		tokenFormatter.indent()
 		tokenFormatter.wrappedLine = true
 	}
-	err := tokenFormatter.appendToLine(strVal)
+	err := tokenFormatter.appendToLine(strVal, true)
 	return err
 }
 
@@ -93,6 +100,7 @@ func (tokenFormatter *TokenFormatter) printSpace() error {
 
 // endLine calls printNewLine if the current line is not empty. Otherwise, it does nothing.
 func (tokenFormatter *TokenFormatter) endLine() error {
+	zap.L().Debug("endLine")
 	if tokenFormatter.inLine {
 		err := tokenFormatter.printNewLine()
 		if err != nil {
@@ -105,6 +113,7 @@ func (tokenFormatter *TokenFormatter) endLine() error {
 // printNewLine prints a new line character, and removes any
 // indentation applied by printWithLineWrap.
 func (tokenFormatter *TokenFormatter) printNewLine() error {
+	zap.L().Debug("printNewLine")
 	_, err := fmt.Fprintln(tokenFormatter.writer)
 	if err != nil {
 		return err
@@ -126,14 +135,17 @@ func (tokenFormatter *TokenFormatter) lineRemaining() int {
 	}
 }
 
-// appendToLine appends a string to the current line. If the line is empty,
-// outputIndent is called to indent the line before adding the string.
-func (tokenFormatter *TokenFormatter) appendToLine(strVal string) error {
+// appendToLine appends a string to the current line. If the line is empty
+// and indent is true, outputIndent is called to indent the line before appending
+// the string.
+func (tokenFormatter *TokenFormatter) appendToLine(strVal string, indent bool) error {
 	if len(strVal) == 0 {
 		return nil
 	}
 	if !tokenFormatter.inLine {
-		tokenFormatter.outputIndent()
+		if indent {
+			tokenFormatter.outputIndent()
+		}
 		tokenFormatter.inLine = true
 	}
 	_, err := fmt.Fprint(tokenFormatter.writer, strVal)

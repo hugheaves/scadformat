@@ -176,6 +176,7 @@ func (v *FormattingVisitor) VisitModuleDefinition(ctx *parser.ModuleDefinitionCo
 	v.Visit(ctx.L_PAREN())
 	v.Visit(ctx.Parameters())
 	v.Visit(ctx.R_PAREN())
+	v.formatter.printSpace()
 	v.Visit(ctx.Statement())
 	return nil
 }
@@ -234,7 +235,6 @@ func (v *FormattingVisitor) VisitSingleModuleInstantiation(ctx *parser.SingleMod
 }
 
 func (v *FormattingVisitor) VisitInnerInput(ctx *parser.InnerInputContext) interface{} {
-	v.formatter.printSpace()
 	v.Visit(ctx.L_CURLY())
 	v.formatter.endLine()
 	v.formatter.indent()

@@ -25,4 +25,6 @@ buildGoModule rec {
   subPackages = [
     "cmd/scadformat.go"
   ];
+
+  meta.mainProgram = "scadformat";
 }

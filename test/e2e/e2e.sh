@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#test_ids=("bosl2")
+test_ids=("bosl2")
 test_ids=("internal")
 
 declare -A test_input_dir test_input_repo_url test_input_repo_branch test_expected_dir test_expected_repo_url test_expected_repo_branch
@@ -41,7 +41,6 @@ function test_setup {
     fi
 
     if [[ -z  "${test_expected_dir[${test_id}]}" ]]; then
-
       assert 0 git clone "${test_expected_repo_url[${test_id}]}" "${expected_dir}"
       assert 0 git -C "${expected_dir}" checkout "${test_expected_repo_branch[${test_id}]}"
     else

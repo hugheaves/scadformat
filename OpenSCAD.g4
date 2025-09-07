@@ -34,7 +34,7 @@
 
 grammar OpenSCAD;
 
-start: input;
+start: input EOF;
 
 input: ( includeOrUseFile | statement)*;
 
@@ -57,7 +57,7 @@ statement
 */
 statement:
     semicolon // is semicolon
-    | innerInput
+    | statements
     | moduleInstantiation
     | assignment // ends in semicolon
     | moduleDefinition // no semicolon
@@ -78,7 +78,7 @@ inner_input
         ;
 ------------------
 */
-innerInput: L_CURLY statement* R_CURLY;
+statements: L_CURLY statement* R_CURLY;
 
 /*
 Equivalent from parser.y:
@@ -130,7 +130,7 @@ if_statement
         ;
 ------------------
 */
-ifStatement: IF L_PAREN expr R_PAREN childStatement;
+ifStatement: IF parenExpr childStatement;
 
 /*
 Equivalent from parser.y:
@@ -177,7 +177,7 @@ module_id
 */
 moduleId: ID | FOR | LET | ASSERT | ECHO | EACH;
 
-forStatement: FOR L_PAREN arguments R_PAREN childStatement;
+forStatement: FOR parenArgs childStatement;
 
 /*
 Equivalent from parser.y:
@@ -188,7 +188,7 @@ single_module_instantiation
  ------------------
 */
 singleModuleInstantiation:
-    moduleId L_PAREN arguments R_PAREN childStatement;
+    moduleId parenArgs childStatement;
 
 /*
 Equivalent from parser.y:
@@ -209,9 +209,9 @@ expr:
     | ('!' | MINUS | PLUS) expr              # unaryExpr
     | FUNCTION '(' parameters ')' expr       # functionLiteralExpr
     | expr QUESTION_MARK expr COLON expr     # ternaryExpr
-    | LET L_PAREN arguments R_PAREN expr     # letExpr
-    | ASSERT L_PAREN arguments R_PAREN expr? # assertExpr
-    | ECHO L_PAREN arguments R_PAREN expr?   # echoExpr;
+    | LET parenArgs expr                     # letExpr
+    | ASSERT parenArgs expr?                 # assertExpr
+    | ECHO parenArgs expr?                   # echoExpr;
 
 /*
 Equivalent from parser.y:
@@ -226,7 +226,7 @@ call
 call: primary access*;
 
 access:
-    L_PAREN arguments R_PAREN  # functionAccess
+    parenArgs                  # functionAccess
     | L_BRACKET expr R_BRACKET # arrayAccess
     | '.' ID                   # memberAccess;
 
@@ -256,7 +256,7 @@ vector_elements
 primary:
     literal
     | id
-    | parenthetical
+    | parenExpr
     | range
     | emptyVect
     | vector;
@@ -265,7 +265,9 @@ literal: TRUE | FALSE | UNDEF | NUMBER | STRING;
 
 id: ID;
 
-parenthetical: L_PAREN expr R_PAREN;
+parenArgs: L_PAREN arguments R_PAREN;
+
+parenExpr: L_PAREN expr R_PAREN;
 
 range: L_BRACKET expr COLON expr (COLON expr)? R_BRACKET;
 
@@ -305,11 +307,11 @@ list_comprehension_elements
 ------------------
 */
 listComprehensionElements:
-    LET L_PAREN arguments R_PAREN listComprehensionElementsP                            # letStatementComprehension
+    LET parenArgs listComprehensionElementsP                            # letStatementComprehension
     | EACH vectorElement                                                                # eachStatementComprehension
     | FOR L_PAREN arguments (SEMICOLON expr SEMICOLON arguments)? R_PAREN vectorElement #
         forStatementComprehension
-    | IF L_PAREN expr R_PAREN vectorElement (ELSE vectorElement)? # ifStatementComprehension;
+    | IF parenExpr vectorElement (ELSE vectorElement)? # ifStatementComprehension;
 
 /*
 Equivalent from parser.y:
@@ -390,6 +392,7 @@ optionalTrailingComma: comma?;
 
 comma: COMMA;
 
+// Define semicolon as Lexer rule for lower priority match than bare Token
 semicolon: SEMICOLON;
 
 assignmentExpression: ID EQUALS expr;

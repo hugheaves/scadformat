@@ -112,9 +112,9 @@ inner_width = outer_width - case_thickness * 2;
 inner_radius = pcb_corner_radius + width_wall_gap;
 
 pcb_screw_positions = [
-  [pcb_screw_offset, pcb_screw_offset, 0], 
-  [pcb_screw_offset, pcb_width - pcb_screw_offset, 0], 
-  [pcb_screw_length_offset, pcb_screw_offset, 0], 
+  [pcb_screw_offset, pcb_screw_offset, 0],
+  [pcb_screw_offset, pcb_width - pcb_screw_offset, 0],
+  [pcb_screw_length_offset, pcb_screw_offset, 0],
   [pcb_screw_length_offset, pcb_width - pcb_screw_offset, 0]
 ];
 

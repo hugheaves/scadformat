@@ -14,7 +14,7 @@
       "args": [
         "--log-level",
         "debug",
-        "coords2.scad"
+        "internal/formatter/testdata/valid/if-else.scad"
       ]
     }
   ]

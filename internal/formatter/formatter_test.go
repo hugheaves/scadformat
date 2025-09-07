@@ -98,6 +98,19 @@ func TestReformat(t *testing.T) {
 	})
 }
 
+func TestInvalid(t *testing.T) {
+	runTestOnDir(t, invalidInputDir, func(t *testing.T) {
+		testData := readTestData(t, invalidInputDir)
+
+		formatter := NewFormatter("")
+
+		_, err := formatter.formatBytes(testData)
+		if err == nil {
+			t.Fatal("expected error but got none")
+		}
+	})
+}
+
 // This is not actually a test - it updates the contents of the "expected" testdata
 // with the output of the formatter.
 func TestUpdate(t *testing.T) {

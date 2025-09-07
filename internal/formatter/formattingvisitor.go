@@ -73,6 +73,7 @@ func (v *FormattingVisitor) VisitChildren(tree antlr.RuleNode) interface{} {
 }
 
 func (v *FormattingVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
+
 	v.printCommentsBefore(node.GetSymbol().GetTokenIndex())
 	v.formatter.printString(node.GetText())
 	v.printEndOfLineCommentAfter(node.GetSymbol().GetTokenIndex())
@@ -85,7 +86,8 @@ func (v *FormattingVisitor) VisitErrorNode(errorNode antlr.ErrorNode) interface{
 }
 
 func (v *FormattingVisitor) VisitStart(ctx *parser.StartContext) interface{} {
-	v.VisitChildren(ctx)
+	// Visit only "input", not the EOF token
+	v.Visit(ctx.Input())
 	v.printCommentsBefore(v.tokenStream.Size())
 	return nil
 }
@@ -136,11 +138,15 @@ func (v *FormattingVisitor) VisitTernaryExpr(ctx *parser.TernaryExprContext) int
 func (v *FormattingVisitor) VisitChildStatements(ctx *parser.ChildStatementsContext) interface{} {
 	v.Visit(ctx.L_CURLY())
 	v.formatter.endLine()
-	v.formatter.indent()
 	for _, child := range ctx.AllChildStatementOrAssignment() {
+		if child.Assignment() != nil {
+			v.formatter.indent()
+		}
 		v.Visit(child)
+		if child.Assignment() != nil {
+			v.formatter.unindent()
+		}
 	}
-	v.formatter.unindent()
 	v.Visit(ctx.R_CURLY())
 	return nil
 }
@@ -184,9 +190,7 @@ func (v *FormattingVisitor) VisitModuleDefinition(ctx *parser.ModuleDefinitionCo
 func (v *FormattingVisitor) VisitAssertExpr(ctx *parser.AssertExprContext) interface{} {
 	v.Visit(ctx.ASSERT())
 	v.formatter.printSpace()
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Arguments())
-	v.Visit(ctx.R_PAREN())
+	v.Visit(ctx.ParenArgs())
 	if ctx.Expr() != nil {
 		v.formatter.endLine()
 		v.formatter.indent()
@@ -199,9 +203,7 @@ func (v *FormattingVisitor) VisitAssertExpr(ctx *parser.AssertExprContext) inter
 func (v *FormattingVisitor) VisitEchoExpr(ctx *parser.EchoExprContext) interface{} {
 	v.Visit(ctx.ECHO())
 	v.formatter.printSpace()
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Arguments())
-	v.Visit(ctx.R_PAREN())
+	v.Visit(ctx.ParenArgs())
 	if ctx.Expr() != nil {
 		v.formatter.endLine()
 		v.formatter.indent()
@@ -214,9 +216,7 @@ func (v *FormattingVisitor) VisitEchoExpr(ctx *parser.EchoExprContext) interface
 func (v *FormattingVisitor) VisitLetExpr(ctx *parser.LetExprContext) interface{} {
 	v.Visit(ctx.LET())
 	v.formatter.printSpace()
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Arguments())
-	v.Visit(ctx.R_PAREN())
+	v.Visit(ctx.ParenArgs())
 	v.formatter.endLine()
 	v.formatter.indent()
 	v.Visit(ctx.Expr())
@@ -225,16 +225,12 @@ func (v *FormattingVisitor) VisitLetExpr(ctx *parser.LetExprContext) interface{}
 }
 
 func (v *FormattingVisitor) VisitSingleModuleInstantiation(ctx *parser.SingleModuleInstantiationContext) interface{} {
-	v.Visit(ctx.ModuleId())
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Arguments())
-	v.Visit(ctx.R_PAREN())
-	v.formatChildStatement(ctx.ChildStatement(), false)
+	v.VisitChildren(ctx)
 	v.formatter.endLine()
 	return nil
 }
 
-func (v *FormattingVisitor) VisitInnerInput(ctx *parser.InnerInputContext) interface{} {
+func (v *FormattingVisitor) VisitStatements(ctx *parser.StatementsContext) interface{} {
 	v.Visit(ctx.L_CURLY())
 	v.formatter.endLine()
 	v.formatter.indent()
@@ -273,8 +269,9 @@ func (v *FormattingVisitor) VisitIncludeOrUseFile(ctx *parser.IncludeOrUseFileCo
 func (v *FormattingVisitor) VisitVector(ctx *parser.VectorContext) interface{} {
 	// Determine if this vector has other vectors
 	// or list comprehension elements nested inside
+	var allVectorElements = ctx.AllVectorElement()
 	nested := false
-	for _, ve := range ctx.AllVectorElement() {
+	for _, ve := range allVectorElements {
 		if ve.ListComprehensionElementsP() != nil {
 			nested = true
 		} else {
@@ -294,13 +291,16 @@ func (v *FormattingVisitor) VisitVector(ctx *parser.VectorContext) interface{} {
 		v.formatter.endLine()
 		v.formatter.indent()
 	}
-	for i, ve := range ctx.AllVectorElement() {
+
+	for i, ve := range allVectorElements {
 		v.Visit(ve)
 		if ctx.Comma(i) != nil {
 			v.Visit(ctx.Comma(i))
 		}
 		if nested {
 			v.formatter.endLine()
+		} else if i < len(allVectorElements)-1 {
+			v.formatter.printSpace()
 		}
 	}
 	if nested {
@@ -332,9 +332,7 @@ func (v *FormattingVisitor) VisitForStatementComprehension(ctx *parser.ForStatem
 func (v *FormattingVisitor) VisitLetStatementComprehension(ctx *parser.LetStatementComprehensionContext) interface{} {
 	v.Visit(ctx.LET())
 	v.formatter.printSpace()
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Arguments())
-	v.Visit(ctx.R_PAREN())
+	v.Visit(ctx.ParenArgs())
 	v.formatter.endLine()
 	v.formatter.indent()
 	v.Visit(ctx.ListComprehensionElementsP())
@@ -352,9 +350,7 @@ func (v *FormattingVisitor) VisitEachStatementComprehension(ctx *parser.EachStat
 func (v *FormattingVisitor) VisitIfStatementComprehension(ctx *parser.IfStatementComprehensionContext) interface{} {
 	v.Visit(ctx.IF())
 	v.formatter.printSpace()
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Expr())
-	v.Visit(ctx.R_PAREN())
+	v.Visit(ctx.ParenExpr())
 	v.formatter.endLine()
 	v.formatter.indent()
 	v.Visit(ctx.VectorElement(0))
@@ -375,7 +371,7 @@ func (v *FormattingVisitor) VisitIfElseStatement(ctx *parser.IfElseStatementCont
 	if ctx.ELSE() != nil {
 		v.formatter.printSpace()
 		v.Visit(ctx.ELSE())
-		v.formatChildStatement(ctx.ChildStatement(), true)
+		v.Visit(ctx.ChildStatement())
 	}
 	v.formatter.endLine()
 	return nil
@@ -384,43 +380,75 @@ func (v *FormattingVisitor) VisitIfElseStatement(ctx *parser.IfElseStatementCont
 func (v *FormattingVisitor) VisitIfStatement(ctx *parser.IfStatementContext) interface{} {
 	v.Visit(ctx.IF())
 	v.formatter.printSpace()
-	v.Visit(ctx.L_PAREN())
-	v.Visit(ctx.Expr())
-	v.Visit(ctx.R_PAREN())
-	v.formatChildStatement(ctx.ChildStatement(), false)
+	v.Visit(ctx.ParenExpr())
+	v.Visit(ctx.ChildStatement())
 	return nil
 }
 
-func (v *FormattingVisitor) VisitComma(ctx *parser.CommaContext) interface{} {
-	v.Visit(ctx.COMMA())
-	v.formatter.printSpace()
-	return nil
-}
+// func (v *FormattingVisitor) VisitComma(ctx *parser.CommaContext) interface{} {
+// 	v.Visit(ctx.COMMA())
+// 	v.formatter.printSpace()
+// 	return nil
+// }
 
-// Formats a childStatement, which can be a semicolon, a singleModuleInstantiation, or a childStatements node.
-// isElse is set to true if this childStatement is the else part of an "if else" statement.
-func (v *FormattingVisitor) formatChildStatement(ctx parser.IChildStatementContext, isElse bool) interface{} {
+// Formats a childStatement, which can be a semicolon, a moduleInstantiation, or a childStatements node.
+func (v *FormattingVisitor) VisitChildStatement(ctx *parser.ChildStatementContext) interface{} {
+	zap.S().Debugf("formatChildStatement: parent=%s", reflect.TypeOf(ctx.GetParent()))
+
 	if ctx.Semicolon() != nil {
 		v.Visit(ctx.Semicolon())
 	} else if ctx.ChildStatements() != nil {
 		v.formatter.printSpace()
 		v.Visit(ctx.ChildStatements())
 	} else if ctx.ModuleInstantiation() != nil {
-		continueLine := isElse && ctx.ModuleInstantiation().IfElseStatement() != nil
-		if continueLine {
-			v.formatter.printSpace()
-		} else {
+		_, parentIsIfElse := ctx.GetParent().(*parser.IfElseStatementContext)
+		// determine if this statement is part of an else-if
+		elseIf := ctx.ModuleInstantiation().IfElseStatement() != nil && parentIsIfElse
+		// special formatting for else-if statements: don't start a new line before the "if"
+		if !elseIf {
 			v.formatter.endLine()
 			v.formatter.indent()
+		} else {
+			v.formatter.printSpace()
 		}
 		v.Visit(ctx.ModuleInstantiation())
-		if !continueLine {
+		if !elseIf {
 			v.formatter.unindent()
 		}
 	} else {
 		// not possible to hit this unless there's a parser bug
 		zap.S().Fatalf("Invalid child statement state")
 	}
+	return nil
+}
+
+func (v *FormattingVisitor) VisitArguments(ctx *parser.ArgumentsContext) interface{} {
+	allArgs := ctx.AllArgument()
+	for i, arg := range allArgs {
+		v.Visit(arg)
+		if ctx.Comma(i) != nil {
+			v.Visit(ctx.Comma(i))
+		}
+		if i < len(allArgs)-1 {
+			v.formatter.printSpace()
+		}
+	}
+	v.Visit(ctx.OptionalTrailingComma())
+	return nil
+}
+
+func (v *FormattingVisitor) VisitParameters(ctx *parser.ParametersContext) interface{} {
+	allParams := ctx.AllParameter()
+	for i, arg := range allParams {
+		v.Visit(arg)
+		if ctx.Comma(i) != nil {
+			v.Visit(ctx.Comma(i))
+		}
+		if i < len(allParams)-1 {
+			v.formatter.printSpace()
+		}
+	}
+	v.Visit(ctx.OptionalTrailingComma())
 	return nil
 }
 
@@ -466,7 +494,7 @@ func (v *FormattingVisitor) printCommentToken(token antlr.Token) {
 		zap.S().Debugf("Printing MULTI_NEWLINE, token index = %d, text=[%s]", token.GetTokenIndex(), token.GetText())
 		v.printMultiNewlineComment(token.GetText())
 	default:
-		zap.S().Debugf("skipping non-comment token, token index = %d", token.GetTokenIndex())
+		zap.S().Debugf("skipping non-comment token, token index = %d [%s]", token.GetTokenIndex(), token.GetText())
 	}
 }
 

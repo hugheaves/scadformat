@@ -26,7 +26,6 @@ This requires Homebrew's Go and ANTLR formulae (installed automatically as build
 ```bash
 brew install --HEAD hugheaves/scadformat/scadformat
 ```
-
 ## Usage
 
 SCADFormat is a command line tool.
@@ -91,6 +90,24 @@ Add the following to your Zed `settings.json` (via the `zed: open settings` comm
 Notes:
 - Zed does not ship a built-in OpenSCAD language, so `.scad` files won't have syntax highlighting unless you install a separate Zed extension that registers the OpenSCAD language/grammar. The formatter configuration above still applies to whichever language name you associate with `.scad` files (adjust the `"OpenSCAD"` key to match).
 - Make sure `scadformat` is on the `PATH` that Zed uses. On macOS, GUI-launched apps don't always inherit your shell's `PATH` - installing via [Homebrew](#homebrew-macos--linux) avoids this problem since it installs into a standard location (`/opt/homebrew/bin` or `/usr/local/bin`).
+
+### Helix
+
+[Helix](https://helix-editor.com) supports configuring an external formatter command per language via `languages.toml`. Like Zed, Helix pipes the buffer contents to the command's stdin and expects the formatted result on stdout, which matches SCADFormat's stdin/stdout mode (see [Read from stdin / write to stdout](#read-from-stdin--write-to-stdout) below) directly - no wrapper script needed.
+
+Add the following to your `languages.toml` (either the global `~/.config/helix/languages.toml` or a project-local `.helix/languages.toml`):
+
+```toml
+[[language]]
+name = "openscad"
+formatter = { command = "scadformat" }
+auto-format = true
+```
+
+Notes:
+- Helix has no built-in OpenSCAD language configuration, so you'll also need a `[[language]]` entry that maps the `.scad` file extension (via `file-types = ["scad"]`) to this language name for it to be recognized at all; syntax highlighting additionally requires a tree-sitter grammar, which is a separate concern from formatting.
+- Make sure `scadformat` is on the `PATH` that Helix uses when it launches.
+
 
 ## Building
 

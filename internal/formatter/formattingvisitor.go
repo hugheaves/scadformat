@@ -19,6 +19,7 @@
 package formatter
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -39,6 +40,7 @@ type FormattingVisitor struct {
 	formatter               *TokenFormatter
 	lastPrintedCommentIndex int
 	endLineAfterComma       bool
+	err                     error
 }
 
 func NewFormattingVisitor(tokenStream antlr.TokenStream, formatter *TokenFormatter) *FormattingVisitor {
@@ -81,8 +83,19 @@ func (v *FormattingVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
 }
 
 func (v *FormattingVisitor) VisitErrorNode(errorNode antlr.ErrorNode) interface{} {
-	zap.S().Fatalf("Unable to resolve parsing error: %s", errorNode.GetText())
+	v.setErr(fmt.Errorf("unable to resolve parsing error: %s", errorNode.GetText()))
 	return nil
+}
+
+// setErr records the first error encountered during visitation. Subsequent
+// errors are logged but not retained, since the first error is generally the
+// root cause and later ones are usually symptoms of the parser continuing on
+// in a bad state.
+func (v *FormattingVisitor) setErr(err error) {
+	zap.S().Errorf("%s", err)
+	if v.err == nil {
+		v.err = err
+	}
 }
 
 func (v *FormattingVisitor) VisitStart(ctx *parser.StartContext) interface{} {
@@ -253,7 +266,8 @@ func (v *FormattingVisitor) VisitIncludeOrUseFile(ctx *parser.IncludeOrUseFileCo
 	v.printCommentsBefore(ctx.GetStart().GetTokenIndex())
 	matches := includeOrUseRegex.FindStringSubmatch(ctx.INCLUDE_OR_USE_FILE().GetText())
 	if len(matches) != 3 {
-		zap.S().Fatal("Failed to parse the include or use statement: %s", ctx.GetText())
+		v.setErr(fmt.Errorf("failed to parse the include or use statement: %s", ctx.GetText()))
+		return nil
 	}
 	v.formatter.printString(matches[1])
 	v.formatter.printSpace()
@@ -417,7 +431,7 @@ func (v *FormattingVisitor) VisitChildStatement(ctx *parser.ChildStatementContex
 		}
 	} else {
 		// not possible to hit this unless there's a parser bug
-		zap.S().Fatalf("Invalid child statement state")
+		v.setErr(fmt.Errorf("invalid child statement state: %s", ctx.GetText()))
 	}
 	return nil
 }

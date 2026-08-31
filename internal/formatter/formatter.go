@@ -98,7 +98,7 @@ func (f *Formatter) formatStdio() error {
 		return err
 	}
 
-	os.Stdout.Write(output)
+	_, err = os.Stdout.Write(output)
 	if err != nil {
 		zap.S().Errorf("failed to write data: %s", err)
 		return err
@@ -121,6 +121,9 @@ func (f *Formatter) formatBytes(input []byte) ([]byte, error) {
 	startContext := p.Start_()
 	if e.lastErr == nil {
 		startContext.Accept(v)
+		if v.err != nil {
+			return outputBuffer.Bytes(), v.err
+		}
 	}
 	return outputBuffer.Bytes(), e.lastErr
 }
